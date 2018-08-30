@@ -4,20 +4,23 @@ Simple TMT IRIS ETC based on IRIS simulator.  It calculates the (1)
 exposure time to reach a specific S/N and (2) S/N for a given exposure time.
 
 ## Requirements:
-Python 2.7
-Numpy
-Scipy
-Astropy
-Photutils
-Matplotlib
+* Python 2.7
+* Numpy
+* Scipy
+* Astropy
+* Photutils
+* Matplotlib
 
 ## Installation and setup:
 Set the simdir in the config.ini to directory that contains the PSFs and
 ancillary data.
 
-The expected directory structure within the simdir is:
+The expected directory structure within the simdir is the following:
+
 psfs
+
 spectra
+
 info
 
 ## Examples:
