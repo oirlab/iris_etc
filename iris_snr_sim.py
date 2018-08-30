@@ -256,7 +256,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         # Vega test spectrum
         if spectrum == "vega_all.fits":
             ext = 0 
-            pf = fits.open(spectrum)
+            pf = fits.open("spectra/" + spectrum)
             spec = pf[ext].data
             head = pf[ext].header
             cdelt1 = head["cdelt1"]
@@ -268,7 +268,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 
         elif spectrum == "spec_vega.fits":
             ext = 0 
-            pf = fits.open(spectrum)
+            pf = fits.open("spectra/" + spectrum)
             specwave = pf[ext].data[0,:] # Angstrom
             spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
             nelem = spec.shape[0]
@@ -442,7 +442,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         else:
             if spectrum == "vega_all.fits":
                 ext = 0 
-                pf = fits.open(spectrum)
+                pf = fits.open("spectra/" + spectrum)
                 spec = pf[ext].data
                 head = pf[ext].header
                 cdelt1 = head["cdelt1"]
@@ -454,7 +454,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 
             elif spectrum == "spec_vega.fits":
                 ext = 0 
-                pf = fits.open(spectrum)
+                pf = fits.open("spectra/" + spectrum)
                 specwave = pf[ext].data[0,:] # Angstrom
                 spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
                 nelem = spec.shape[0]
@@ -1064,7 +1064,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 parser = argparse.ArgumentParser(description='TMT IRIS S/N exposure calculator')
 
 parser.add_argument('-mag', metavar='value', type=float, nargs='?',
-                    default=21.0, help='magnitude of source')
+                    default=21.0, help='magnitude of source [Vega]')
+parser.add_argument('-flux', metavar='value', type=float, nargs='?',
+                    default=1.62e-19, help='flux density of source [erg/s/cm^2/Ang]')
 parser.add_argument('-filter', metavar='value', type=str, nargs='?',
                     default="K", help='filter name')
 parser.add_argument('-scale', metavar='value', type=float, nargs='?',
