@@ -256,7 +256,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         # Vega test spectrum
         if spectrum == "vega_all.fits":
             ext = 0 
-            pf = fits.open("spectra/" + spectrum)
+            pf = fits.open("model_spectra/" + spectrum)
             spec = pf[ext].data
             head = pf[ext].header
             cdelt1 = head["cdelt1"]
@@ -268,7 +268,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 
         elif spectrum == "spec_vega.fits":
             ext = 0 
-            pf = fits.open("spectra/" + spectrum)
+            pf = fits.open("model_spectra/" + spectrum)
             specwave = pf[ext].data[0,:] # Angstrom
             spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
             nelem = spec.shape[0]
@@ -442,7 +442,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         else:
             if spectrum == "vega_all.fits":
                 ext = 0 
-                pf = fits.open("spectra/" + spectrum)
+                pf = fits.open("model_spectra/" + spectrum)
                 spec = pf[ext].data
                 head = pf[ext].header
                 cdelt1 = head["cdelt1"]
@@ -454,7 +454,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 
             elif spectrum == "spec_vega.fits":
                 ext = 0 
-                pf = fits.open("spectra/" + spectrum)
+                pf = fits.open("model_spectra/" + spectrum)
                 specwave = pf[ext].data[0,:] # Angstrom
                 spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
                 nelem = spec.shape[0]
@@ -1131,7 +1131,7 @@ png_output = args.o
 
 IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
          filter=filter, scale=scale, simdir=simdir, spectrum=spectrum, 
-         png_output=png_output, verb=1)
+         png_output=png_output, verb=2)
 
 
 

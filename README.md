@@ -1,7 +1,10 @@
 # TMT IRIS ETC
 
-Simple TMT IRIS ETC based on IRIS simulator.  It calculates the (1)
+Simple TMT IRIS ETC based on IRIS simulator (see ).  It calculates the (1)
 exposure time to reach a specific S/N and (2) S/N for a given exposure time.
+
+*Authors: Greg Walth (UC San Diego)*
+*Contributors: Andrey Vayner (UC San Diego)*
 
 ## Requirements:
 * Python 2.7
@@ -19,9 +22,12 @@ The expected directory structure within the simdir is the following:
 
 psfs
 
-spectra
+model_spectra
+
+skyspectra
 
 info
+
 
 ## Examples:
 `iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc snr -nframes 2`
