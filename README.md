@@ -14,6 +14,10 @@ exposure time to reach a specific S/N and (2) S/N for a given exposure time.
 * Photutils
 * Matplotlib
 
+### Additional requirements:
+IRIS_ancillary_files.tar.gz which is contains the following directories; psfs, model_spectra and skyspectra.  The
+directories contain binary files for the IRIS ETC calculation.
+
 ## Installation and setup:
 Set the simdir in the config.ini to directory that contains the PSFs and
 ancillary data.
