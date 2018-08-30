@@ -156,7 +156,7 @@ class background_specs3():
         ## CREATE THE SIZE OF THE SPECTRUM
         #determine length in pixels of complete spectrum(9000 to 25000), dxspectrum
         dxspectrum = int(ceil(log10(wf/wi)/log10(1.0+1.0/resolution) ) )
-        print dxspectrum
+        #print dxspectrum
         wave = np.linspace(wi,wf,dxspectrum)
         
         ## READ IN OH Lines ( the resolving power of this OH sky lines is around R=2600)
@@ -177,7 +177,7 @@ class background_specs3():
         ## Loop over the first and last pixel of the complete spectrum
         ## i (pixel along complete spectrum)
         #for i=0L,dxspectrum-1 do begin 
-        print dxspectrum
+        #print dxspectrum
         for i in xrange(dxspectrum):
         
             if filteronly:
@@ -278,8 +278,8 @@ class background_specs3():
            #geminiSpec = interpol(geminiSpec, geminiWave, wavelength)
            #print geminiWave.shape
            #print geminiSpec.shape
-           print geminiWave[0:10]
-           print geminiWave[-40:]
+           #print geminiWave[0:10]
+           #print geminiWave[-40:]
            #print geminiSpec[0:40]
            #print geminiSpec[-40:]
            R_i = interpolate.interp1d(geminiWave,geminiSpec)
@@ -309,9 +309,9 @@ class background_specs3():
         #pixel of spectrum corresponding to min
         imax = int(floor( log10(lambdamax/wi)/log10(1.0+1.0/(resolution)) ))
         #same for max
-        print lambdamin,lambdamax
-        print 'min wave',imin
-        print 'max wave',imax
+        #print lambdamin,lambdamax
+        #print 'min wave',imin
+        #print 'max wave',imax
         
         ## Define background spectra to region of desired filter
         ohspec_filt = ohspec[imin:imax+1]
@@ -370,7 +370,7 @@ class background_specs3():
         # don't normalize
         if fullback or fulloh or fullcont or fullbb:
            fullbb = bbspec
-           print fullbb.shape
+           #print fullbb.shape
         
            fullcont = contspec
            fulloh = ohspec
@@ -439,7 +439,7 @@ class background_specs2():
         ## CREATE THE SIZE OF THE SPECTRUM
         #determine length in pixels of complete spectrum(9000 to 25000), dxspectrum
         dxspectrum = int(ceil(log10(wf/wi)/log10(1.0+1.0/resolution) ) )
-        print dxspectrum
+        #print dxspectrum
         
         ## READ IN OH Lines ( the resolving power of this OH sky lines is around R=2600)
         #openr,ohlines_file,/get_lun,simdir+"/info/ohlineslist.dat"
@@ -459,7 +459,7 @@ class background_specs2():
         ## Loop over the first and last pixel of the complete spectrum
         ## i (pixel along complete spectrum)
         #for i=0L,dxspectrum-1 do begin 
-        print dxspectrum-1
+        #print dxspectrum-1
         for i in xrange(dxspectrum-1):
         
         
