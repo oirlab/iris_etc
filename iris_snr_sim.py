@@ -40,15 +40,35 @@ mu = 1E-4           # cm
 from get_filterdat import get_filterdat
 #from background_specs import background_specs2
 from background_specs import background_specs3
+from get_psf import get_psf
+
+def extrap1d(interpolator):
+    xs = interpolator.x
+    ys = interpolator.y
+
+    def pointwise(x):
+        if x < xs[0]:
+            return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+        elif x > xs[-1]:
+            return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+        else:
+            return interpolator(x)
+
+    def ufunclike(xs):
+        return np.array(map(pointwise, np.array(xs)))
+
+    return ufunclike
 
 
-def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
-             radius = 0.024, gain = 1.0, readnoise = 5., darkcurrent = 0.002,
-             scale = 0.004, resolution = 4000, collarea = 630.0, 
-             positions = [0, 0], bgmag = None, efftot = None,
-             mode = "imager", calc = "snr", spectrum = "spec_vega.fits", 
-             lam_obs = 2.22, vel_width = 200., png_output = None,
-             verb = 1, simdir='~/data/iris/sim/'):
+def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
+             nframes = 1, snr = 10.0, radius = 0.024, gain = 1.0, 
+             readnoise = 5., darkcurrent = 0.002, scale = 0.004,
+             resolution = 4000, collarea = 630.0, positions = [0, 0],
+             bgmag = None, efftot = None, mode = "imager", calc = "snr",
+             spectrum = "Vega", lam_obs = 2.22, line_width = 200.,
+             png_output = None, zenith_angle = 30. , atm_cond = 50.,
+             psf_loc = [8.8, 8.8], psf_time = 1.4, verb = 1, psf_old = 0, 
+             simdir='~/data/iris/sim/', psfdir='~/data/iris/sim/'):
 
     # KEYWORDS: filter - broadband filter to use (default: 'K')
     #           mag - magnitude of the point source
@@ -69,10 +89,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
     #           verb - verbosity level
 
     #           mode - either "imager" or "ifs"
-    #           calc - either "snr" or "itime"
+    #           calc - either "snr" or "exptime"
     
     radius /= scale
   
+    if spectrum.lower() == "vega": 
+       spectrum = "vega_all.fits"
+       #spectrum = "spec_vega.fits"
 
     
     ##### READ IN FILTER INFORMATION
@@ -160,27 +183,77 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
     # test case
     # PSFs
     #print lambdac
-    
-    psf_dict = { 928:"psf_x0_y0_wvl928nm_implKOLMO117nm_bin4mas_sm.fits",
-                1092:"psf_x0_y0_wvl1092nm_implKOLMO117nm_bin4mas_sm.fits",
-                1270:"psf_x0_y0_wvl1270nm_implKOLMO117nm_bin4mas_sm.fits",
-                1629:"psf_x0_y0_wvl1629nm_implKOLMO117nm_bin4mas_sm.fits",
-                2182:"psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits"}
-    
-    psf_wvls = psf_dict.keys()
-    
-    psf_ind = np.argmin(np.abs(lambdac/10. - psf_wvls))
-    psf_wvl =  psf_wvls[psf_ind]
-    #psf_file = os.path.expanduser(simdir + "/psfs/" + psf_dict[psf_wvl])
-    psf_file = os.path.expanduser(simdir + "/psfs/results_central/" + psf_dict[psf_wvl])
-    #print psf_ind
-    #print psf_wvl
-    #print psf_file
-   
-    ext = 0 
-    pf = fits.open(psf_file)
 
+    if psf_old:
+    
+         psf_dict = { 928:"psf_x0_y0_wvl928nm_implKOLMO117nm_bin4mas_sm.fits",
+                     1092:"psf_x0_y0_wvl1092nm_implKOLMO117nm_bin4mas_sm.fits",
+                     1270:"psf_x0_y0_wvl1270nm_implKOLMO117nm_bin4mas_sm.fits",
+                     1629:"psf_x0_y0_wvl1629nm_implKOLMO117nm_bin4mas_sm.fits",
+                     2182:"psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits"}
+         
+         psf_wvls = psf_dict.keys()
+         
+         psf_ind = np.argmin(np.abs(lambdac/10. - psf_wvls))
+         psf_wvl =  psf_wvls[psf_ind]
+         #psf_file = os.path.expanduser(simdir + "/psfs/" + psf_dict[psf_wvl])
+         psf_file = os.path.expanduser(psfdir + "/psfs/old/results_central/" + psf_dict[psf_wvl])
+         ext = 0
+
+         #print psf_ind
+         #print psf_wvl
+         #print psf_file
+        
+    else:
+        if mode.lower() == "ifs":
+            psf_wvls = [840, 928, 1026, 988, 1092, 1206, 1149, 1270, 1403, 1474,
+                        1629, 1810, 1975, 2182, 2412] # nm
+        if mode.lower() == "imager":
+            psf_wvls = [830, 876, 925, 970, 1019, 1070, 1166, 1245, 1330, 1485,
+                        1626, 1781, 2000, 2191, 2400] # nm
+
+        #print psf_loc
+        #print zenith_angle
+        #print atm_cond
+        psf_file = get_psf(zenith_angle, atm_cond, mode, psf_time, psf_loc, scale)
+        #print psf_file
+        psf_file = os.path.expanduser(psfdir + "/psfs/" + psf_file)
+
+        #print psf_file
+        #print os.path.isfile(psf_file) 
+
+        psf_ind = np.argmin(np.abs(lambdac/10. - psf_wvls))
+        psf_wvl =  psf_wvls[psf_ind]
+        ext = psf_ind
+
+        #print lambdac
+        #print psf_ind
+        #print psf_wvl
+
+        # FITS header comments contain wavelength information
+        # for i in xrange(len(pf)): print pf[i].header["COMMENT"]
+
+        # truncate PSF with iamge size goes down to 1e-6 
+        # check in log scale
+        # 350 - 1150
+
+
+
+    pf = fits.open(psf_file)
+    #print len(pf)
     image = pf[ext].data
+    head = pf[ext].header
+    #print head['COMMENT']
+
+    # position of center of PSF
+    x_im_size,y_im_size = image.shape
+    hw_x = x_im_size/2
+    hw_y = y_im_size/2
+
+    #print hw_x,hw_y
+
+    #sys.exit()
+    
     #print image.sum()
     #image /= image.sum()
 
@@ -222,15 +295,17 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         p.plot(ABwave, ABdelta)
         plt.show()
 
-    #delta_inter = interpolate.interp1d(ABwave,ABdelta)
-    #delta = delta_inter(lambdac)
 
-    delta = 1.85
+    R_i = interpolate.interp1d(ABwave,ABdelta)
+    R_x = extrap1d(R_i)
+    delta = R_x(lambdac/1e4)
+
     print delta
 
     # delta = mAB - mVega
     ABmag = mag + delta
     print ABmag
+    #################################################################
 
     fnu = 10**(-0.4*(ABmag + 48.60))                 # erg/s/cm^2/Hz
     print "Calculated from magnitude"
@@ -332,9 +407,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 
 
 
+    print image.shape
     if 0: 
         # original code
-        xc,yc = [239,239]
+        xc,yc = [hw_x,hw_y]
         xs = xc
         ys = yc
         subimage = image
@@ -346,8 +422,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         xc,yc = positions
        
         # image coordinates 
-        xp = xc + 239
-        yp = yc + 239
+        xp = xc + hw_x
+        yp = yc + hw_y
         # 239 x 239 is the shape of the PSF image
 
         # subimage coordinates
@@ -417,16 +493,16 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
         print subimage.shape
         print subimage.size
 
-        if spectrum == "Flat":
+        if spectrum.lower() == "flat":
             spec_temp = np.ones(dxspectrum)
             intFlux = integrate.trapz(spec_temp,wave)
             intNorm = flux_phot/intFlux
             print "Spec integration = %.1f" % intFlux
             print "Spec normalization = %.4e" % intNorm
 
-        elif spectrum == "Emission":
+        elif spectrum.lower() == "emission":
             specwave = wave
-            lam_width=lam_obs/c_km*vel_width
+            lam_width=lam_obs/c_km*line_width
             instwidth = (lam_obs/resolution)
             width = np.sqrt(instwidth**2+lam_width**2)
             A = flux_phot/(width*np.sqrt(2*np.pi))  #  photons/s/m^2/micron
@@ -1053,8 +1129,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 #   iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc exptime -snr 10
 #   iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc snr -snr 50.0 
 
-#   iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc snr -nframes 1 -spectrum vega_all.fits
-#   iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 10 -spectrum vega_all.fits
+#   iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc snr -nframes 1 -spectrum Vega
+#   iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 10 -spectrum Vega
 #
 #   deprecated:
 #       iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -imager -snr 60.0 
@@ -1063,31 +1139,48 @@ def IRIS_ETC(filter = "K", mag = 21.0, itime = 1.0, nframes = 1, snr = 10.0,
 
 parser = argparse.ArgumentParser(description='TMT IRIS S/N exposure calculator')
 
-parser.add_argument('-mag', metavar='value', type=float, nargs='?',
-                    default=21.0, help='magnitude of source [Vega]')
-parser.add_argument('-flux', metavar='value', type=float, nargs='?',
-                    default=1.62e-19, help='flux density of source [erg/s/cm^2/Ang]')
+
 parser.add_argument('-filter', metavar='value', type=str, nargs='?',
                     default="K", help='filter name')
 parser.add_argument('-scale', metavar='value', type=float, nargs='?',
-                    default=0.004, help='detector scale')
+                    default=0.004, help='detector scale [arcsec]')
 parser.add_argument('-itime', metavar='value', type=float, nargs='?',
-                    default=1.0, help='integration time')
-parser.add_argument('-spectrum', metavar='value', type=str, nargs='?',
-                    default="spec_vega.fits", help='filter name')
+                    default=1.0, help='integration time [seconds]')
+parser.add_argument('-resolution', metavar='value', type=int, nargs='?',
+                    default=4000, help='resolution of the instrument')
+parser.add_argument('-spectrum',  choices=['Vega','Flat','Emission'],
+                    default="Vega", help='input spectrum')
+parser.add_argument('-wavelength', metavar='value', type=float, nargs='?',
+                    default="2.22", help='emission line wavelength [microns]')
+parser.add_argument('-line-width', metavar='value', type=float, nargs='?',
+                    default="200.", help='emission line width in velocity [km/s]')
 parser.add_argument('-nframes', metavar='value', type=int, nargs='?',
                     default=1, help='number of frames')
 parser.add_argument('-snr', metavar='value', type=float, nargs='?',
-                    default=10.0, help='number of frames')
+                    default=10.0, help='signal-to-noise ratio')
 parser.add_argument('-calc', choices=['snr','exptime'], required=True,
                     help='calculation performed')
 parser.add_argument('-mode', choices=['imager','IFS'], required=True,
                     help='instrumental mode')
 
-parser.add_argument('-o', nargs='?', default=None,
+
+parser.add_argument('-zenith-angle', type=float, metavar='value', nargs='?',
+                    default=30., help='zenith angle of simulated PSF [degrees]')
+parser.add_argument('-atm-cond', type=float, metavar='value', nargs='?',
+                    default=50., help='atmosphere conditions of simulated PSF')
+parser.add_argument('-psf-loc', nargs=2, type=float, metavar='value',
+                    default=[8.8, 8.8], help='location of PSF on the focal plane of the instrument [arcsec]')
+
+
+parser.add_argument('-o', nargs='?', metavar='value', default=None,
                     help='Output file name, else display to screen')
 
 
+group1 = parser.add_mutually_exclusive_group(required=True)
+group1.add_argument('-mag', metavar='value', type=float, nargs='?',
+                    default=21.0, help='magnitude of source [Vega]')
+group1.add_argument('-flambda', metavar='value', type=float, nargs='?',
+                    default=1.62e-19, help='flux density of source [erg/s/cm^2/Ang]')
 
 
 if not os.path.exists('config.ini'):
@@ -1098,6 +1191,7 @@ try:
     config = configparser.ConfigParser()
     config.read('config.ini')
     simdir = config['CONFIG']['simdir']
+    psfdir = config['CONFIG']['psfdir']
 except:
     print "Problem with config.ini file!"
     print "Missing parameter?"
@@ -1108,11 +1202,22 @@ except:
 
 args = parser.parse_args()
 
-mag  = args.mag
+mag = args.mag
+flambda = args.flambda
+
 filter = args.filter
 scale = args.scale
 itime = args.itime
+resolution = args.resolution
 spectrum = args.spectrum
+wavelength = args.wavelength
+line_width = args.line_width
+
+
+zenith_angle = args.zenith_angle  
+atm_cond = args.atm_cond
+psf_loc = args.psf_loc
+
 
 nframes = args.nframes
 snr = args.snr
@@ -1122,6 +1227,10 @@ calc = args.calc
 
 png_output = args.o
 
+print mag
+print flambda
+#sys.exit()
+
 ###############################################################
 # verb = 0    No output
 # verb = 1    Normal verbosity (including basic plotting)
@@ -1130,8 +1239,10 @@ png_output = args.o
 ###############################################################
 
 IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
-         filter=filter, scale=scale, simdir=simdir, spectrum=spectrum, 
-         png_output=png_output, verb=2)
+         resolution=resolution, filter=filter, scale=scale, simdir=simdir,
+         spectrum=spectrum, lam_obs = wavelength, line_width = line_width, 
+         zenith_angle=zenith_angle, atm_cond=atm_cond, psf_loc=psf_loc,
+         png_output=png_output, psfdir=psfdir, verb=1)
 
 
 
