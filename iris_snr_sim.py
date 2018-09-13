@@ -718,7 +718,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout_aper = []
             for n in xrange(dxspectrum): 
                 data_cutout.append(mask.cutout(snrCube[n,:,:]))
-                data_cutout_aper.append(mask.apply(snrCube[n,:,:]))
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = mask.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
+                else:
+                    data_cutout_tmp = mask.apply(snrCube[n,:,:])
+                data_cutout_aper.append(data_cutout_tmp)
 
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
@@ -828,7 +832,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout_aper = []
             for n in xrange(dxspectrum): 
                 data_cutout.append(mask.cutout(totime[n,:,:]))
-                data_cutout_aper.append(mask.apply(totime[n,:,:]))
+
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = mask.multiply(totime[n,:,:]) # in version 0.4 of photutils
+                else:
+                    data_cutout_tmp = mask.apply(totime[n,:,:])
+                data_cutout_aper.append(data_cutout_tmp)
 
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
@@ -1085,7 +1094,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #print totime
             #print np.max(totime)
             data_cutout = mask.cutout(totime)
-            data_cutout_aper = mask.apply(totime)
+            if photutils.__version__ == "0.4":
+                data_cutout_aper = mask.multiply(totime) # in version 0.4 of photutils
+            else:
+                data_cutout_aper = mask.apply(totime)
             print "Min time (peak flux) = %.4f seconds" % np.min(totime)
             print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
             print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
@@ -1099,7 +1111,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
   
             # exposure time for aperture 
             data_cutout = mask.cutout(tmtImage)
-            data_cutout_aper = mask.apply(tmtImage)
+            #data_cutout_aper = mask.apply(tmtImage)
+            if photutils.__version__ == "0.4":
+                data_cutout_aper = mask.multiply(tmtImage) # in version 0.4 of photutils
+            else:
+                data_cutout_aper = mask.apply(tmtImage)
             aper_sum = data_cutout_aper.sum()
             totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
             print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])

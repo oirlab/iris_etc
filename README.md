@@ -11,7 +11,7 @@ exposure time to reach a specific S/N and (2) S/N for a given exposure time.
 * Numpy
 * Scipy
 * Astropy
-* Photutils
+* Photutils 0.4
 * Matplotlib
 
 ### Additional requirements:
