@@ -10,6 +10,7 @@
 
 import argparse, os, sys
 from math import log10,ceil,sqrt,log
+#import ConfigParser   # Python 2.7?
 import configparser
 
 
@@ -22,6 +23,9 @@ from astropy.modeling import models
 from photutils import aperture_photometry
 from photutils import CircularAperture, SkyCircularAperture
 from photutils.background import Background2D
+
+import photutils
+print photutils.__version__
 
 import matplotlib.pyplot as plt
 
@@ -331,7 +335,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         # Vega test spectrum
         if spectrum == "vega_all.fits":
             ext = 0 
-            pf = fits.open("model_spectra/" + spectrum)
+            spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
+            pf = fits.open(spec_file)
             spec = pf[ext].data
             head = pf[ext].header
             cdelt1 = head["cdelt1"]
@@ -343,7 +348,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
         elif spectrum == "spec_vega.fits":
             ext = 0 
-            pf = fits.open("model_spectra/" + spectrum)
+            spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
+            pf = fits.open(spec_file)
             specwave = pf[ext].data[0,:] # Angstrom
             spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
             nelem = spec.shape[0]
@@ -518,7 +524,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         else:
             if spectrum == "vega_all.fits":
                 ext = 0 
-                pf = fits.open("model_spectra/" + spectrum)
+                spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
+                pf = fits.open(spec_file)
                 spec = pf[ext].data
                 head = pf[ext].header
                 cdelt1 = head["cdelt1"]
@@ -530,7 +537,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             elif spectrum == "spec_vega.fits":
                 ext = 0 
-                pf = fits.open("model_spectra/" + spectrum)
+                spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
+                pf = fits.open(spec_file)
                 specwave = pf[ext].data[0,:] # Angstrom
                 spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
                 nelem = spec.shape[0]
@@ -1014,9 +1022,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             
             #image = mask.to_image(shape=((200, 200)))
             data_cutout = mask.cutout(snrMap)
-            #if photutils.__version__ == "0.4":
-            data_cutout_aper = mask.apply(snrMap)
-            #data_cutout_aper = mask.multiply(snrMap) # in version 0.4 of photutils
+            if photutils.__version__ == "0.4":
+                data_cutout_aper = mask.multiply(snrMap) # in version 0.4 of photutils
+            else:
+                data_cutout_aper = mask.apply(snrMap)
+
             #print np.min(snrMap)
             print "Peak S/N = %.4f" % np.max(snrMap)
             print "Median S/N = %.4f" % np.median(data_cutout_aper)
@@ -1189,9 +1199,13 @@ if not os.path.exists('config.ini'):
 
 try:
     config = configparser.ConfigParser()
+    #config = ConfigParser.ConfigParser()
     config.read('config.ini')
+    #simdir = config.get('CONFIG','simdir')
     simdir = config['CONFIG']['simdir']
+    #psfdir = config.get('CONFIG','psfdir')
     psfdir = config['CONFIG']['psfdir']
+
 except:
     print "Problem with config.ini file!"
     print "Missing parameter?"
@@ -1242,7 +1256,7 @@ IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
          resolution=resolution, filter=filter, scale=scale, simdir=simdir,
          spectrum=spectrum, lam_obs = wavelength, line_width = line_width, 
          zenith_angle=zenith_angle, atm_cond=atm_cond, psf_loc=psf_loc,
-         png_output=png_output, psfdir=psfdir, verb=1)
+         png_output=png_output, psfdir=psfdir, verb=2)
 
 
 
