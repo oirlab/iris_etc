@@ -201,7 +201,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
          psf_ind = np.argmin(np.abs(lambdac/10. - psf_wvls))
          psf_wvl =  psf_wvls[psf_ind]
          #psf_file = os.path.expanduser(simdir + "/psfs/" + psf_dict[psf_wvl])
-         psf_file = os.path.expanduser(psfdir + "/psfs/old/results_central/" + psf_dict[psf_wvl])
+         psf_file = os.path.expanduser(psfdir + "/psfs/results_central/" + psf_dict[psf_wvl])
          ext = 0
 
          #print psf_ind
@@ -297,6 +297,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         fig = plt.figure()
         p = fig.add_subplot(111)
         p.plot(ABwave, ABdelta)
+        p.set_xlabel("Wavelength ($\mu$m)")
+        p.set_ylabel("m$_{\\rm AB}$ - m$_{\\rm Vega}$")
         plt.show()
 
 
@@ -1150,18 +1152,31 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 # ~/python.linux/dev/iris/snr/iris_snr_sim.py
     
-# usage:
-#   iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc snr -nframes 2
-#   iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc exptime -snr 10
-#   iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc snr -snr 50.0 
-
-#   iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc snr -nframes 1 -spectrum Vega
-#   iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 10 -spectrum Vega
+# Usage:
+#  Imager mode
+#    iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc snr -nframes 2
+#    iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc exptime -snr 10
+#  IFS mode
+#    Case 1 (Vega or Flat spectrum)
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 50.0
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc snr -nframes 1 -spectrum Vega
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 10 -spectrum Vega
+#    Case 2 (Emission line spectrum)
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc snr -nframes 1 -spectrum Emission -line-width 100 -wavelength 2.15
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 10 -spectrum Emission -line-width 100 -wavelength 2.15
 #
-#   deprecated:
-#       iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -imager -snr 60.0 
-#       iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -imager -frames 2
-#       iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -ifs -snr 10.0 
+#  PSFs
+#    Imager mode
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc snr -nframes 2 -zenith-angle 45 -atm-cond 75 -psf-loc 0.6 12.
+#    IFS mode
+#      iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 50.0 -zenith-angle 30 -atm-cond 25 -psf-loc 0. 0.
+#
+#
+#  Vega test cases
+#    iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc snr -nframes 1 -spectrum Vega
+#    iris_snr_sim.py -mag 0.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 10 -spectrum Vega
+
+
 
 parser = argparse.ArgumentParser(description='TMT IRIS S/N exposure calculator')
 
@@ -1197,6 +1212,8 @@ parser.add_argument('-atm-cond', type=float, metavar='value', nargs='?',
 parser.add_argument('-psf-loc', nargs=2, type=float, metavar='value',
                     default=[8.8, 8.8], help='location of PSF on the focal plane of the instrument [arcsec]')
 
+parser.add_argument('-psf-old', action='store_true',
+                     help='use old PSFs')
 
 parser.add_argument('-o', nargs='?', metavar='value', default=None,
                     help='Output file name, else display to screen')
@@ -1248,6 +1265,7 @@ zenith_angle = args.zenith_angle
 atm_cond = args.atm_cond
 psf_loc = args.psf_loc
 
+psf_old = args.psf_old
 
 nframes = args.nframes
 snr = args.snr
@@ -1272,7 +1290,7 @@ IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
          resolution=resolution, filter=filter, scale=scale, simdir=simdir,
          spectrum=spectrum, lam_obs = wavelength, line_width = line_width, 
          zenith_angle=zenith_angle, atm_cond=atm_cond, psf_loc=psf_loc,
-         png_output=png_output, psfdir=psfdir, verb=2)
+         png_output=png_output, psfdir=psfdir, psf_old=psf_old, verb=1)
 
 
 
