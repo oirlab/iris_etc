@@ -109,7 +109,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     lambdac = filterdat["lambdac"]
     bw = filterdat["bw"]
     filterfile = os.path.expanduser(simdir + filterdat["filterfiles"][0])
-    print filterfile
+    #print filterfile
     
     #print lambdamin
     #print lambdamax
@@ -126,7 +126,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     ## resolution times 2 to get nyquist sampled 
     crval1 = wi/10.                      # nm
     cdelt1 = ((wf-wi) / dxspectrum)/10.  # nm/channel
-    print dxspectrum
+    #print dxspectrum
 
 
     # Throughput calculation    
@@ -289,9 +289,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
     ABwave  = [i[1] for i in ABconv]
     ABdelta = [i[2] for i in ABconv]
-    print
+    #print
 
-    print filter
+    #print filter
 
     if verb > 1:
         fig = plt.figure()
@@ -306,19 +306,19 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     R_x = extrap1d(R_i)
     delta = R_x(lambdac/1e4)
 
-    print delta
+    #print delta
 
     # delta = mAB - mVega
     ABmag = mag + delta
-    print ABmag
+    #print ABmag
     #################################################################
 
     fnu = 10**(-0.4*(ABmag + 48.60))                 # erg/s/cm^2/Hz
-    print "Calculated from magnitude"
-    print fnu,"erg/s/cm^2/Hz"
+    #print "Calculated from magnitude"
+    #print fnu,"erg/s/cm^2/Hz"
     #flambda = fnu*Ang/((lam_obs*mu)**2/c)
     flambda = fnu*Ang/((lambdac*Ang)**2/c)
-    print flambda,"erg/s/cm^2/Ang"
+    #print flambda,"erg/s/cm^2/Ang"
     #nu = c/(lam_obs*mu)
     #print nu,"Hz"
     #dnu = nu/(2*resolution)
@@ -327,10 +327,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #print dlambda, "Ang"
     #print dnu, "Hz"
     #print fnu*dnu,"erg/s/cm^2"
-    print flambda*lambdac,"erg/s/cm^2"
+    #print flambda*lambdac,"erg/s/cm^2"
     E_phot = (h*c)/(lambdac*Ang) # erg
-    print flambda*lambdac/E_phot,"photons/s/cm^2"
-    print flambda/E_phot,"photons/s/cm^2/Ang"
+    #print flambda*lambdac/E_phot,"photons/s/cm^2"
+    #print flambda/E_phot,"photons/s/cm^2/Ang"
     # above is correct!!
     ########################################################################
     if verb > 1:
@@ -381,20 +381,21 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         plt.show()
 
 
-    print
-    print
-    print "Calculated from IRIS zeropoints"
+    #print
+    #print
+    #print "Calculated from IRIS zeropoints"
     E_phot = (h*c)/(lambdac*Ang) # erg
     flux = flux_phot*E_phot*(1./(100*100)) # erg/s/cm^2
     # convert from m**2 to cm**2
-    print flux,"erg/s/cm^2"
-    print flux_phot*(1./(100*100)),"photons/s/cm^2"
+    #print flux,"erg/s/cm^2"
+    #print flux_phot*(1./(100*100)),"photons/s/cm^2"
 
-    #print flux_phot/dnu,"photons/s/cm^2/Hz"
-    print flux_phot*(1./(100*100))/lambdac,"photons/s/cm^2/Ang"
-    print flux_phot,"photons/s/m^2"
-    print flux_phot*collarea,"photons/s"
-    print flux_phot*collarea*efftot,"photons/s"
+    ##print flux_phot/dnu,"photons/s/cm^2/Hz"
+    #print flux_phot*(1./(100*100))/lambdac,"photons/s/cm^2/Ang"
+    #print flux_phot,"photons/s/m^2"
+    #print flux_phot*collarea,"photons/s"
+    #print flux_phot*collarea*efftot,"photons/s"
+
     #print flux/dnu,"erg/s/cm^2/Hz"
     #print flux/dlambda,"erg/s/cm^2/Ang"
 
@@ -439,9 +440,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ys = yc + hwbox
 
         subimage = image[yp-hwbox:yp+hwbox+1,xp-hwbox:xp+hwbox+1]
-        print xc,yc
-        print xp,yp
-        print xs,ys
+        #print xc,yc
+        #print xp,yp
+        #print xs,ys
 
     
     # normalize by the full PSF image
@@ -494,19 +495,19 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         backtot_func = interpolate.interp1d(backwave,backtot)
         backtot = backtot_func(wave)
 
-        print
-        print "Flux = %.2e photons/s/m^2" % flux_phot
+        #print
+        #print "Flux = %.2e photons/s/m^2" % flux_phot
 
-        print "Image sum = %.1f" % subimage.sum()
-        print subimage.shape
-        print subimage.size
+        #print "Image sum = %.1f" % subimage.sum()
+        #print subimage.shape
+        #print subimage.size
 
         if spectrum.lower() == "flat":
             spec_temp = np.ones(dxspectrum)
             intFlux = integrate.trapz(spec_temp,wave)
             intNorm = flux_phot/intFlux
-            print "Spec integration = %.1f" % intFlux
-            print "Spec normalization = %.4e" % intNorm
+            #print "Spec integration = %.1f" % intFlux
+            #print "Spec normalization = %.4e" % intNorm
 
         elif spectrum.lower() == "emission":
             specwave = wave
@@ -514,14 +515,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             instwidth = (lam_obs/resolution)
             width = np.sqrt(instwidth**2+lam_width**2)
             A = flux_phot/(width*np.sqrt(2*np.pi))  #  photons/s/m^2/micron
-            print flux_phot
-            print width*1e4
-            print A
+            #print flux_phot
+            #print width*1e4
+            #print A
             spec_temp = A*np.exp(-0.5*((specwave - lam_obs)/width)**2.)
             intFlux = integrate.trapz(spec_temp,specwave)
             intNorm = flux_phot/intFlux
-            print "Spec integration = %.1f" % intFlux
-            print "Spec normalization = %.4e" % intNorm
+            #print "Spec integration = %.1f" % intFlux
+            #print "Spec normalization = %.4e" % intNorm
 
         else:
             if spectrum == "vega_all.fits":
@@ -587,10 +588,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             intFlux = integrate.trapz(spec_temp,wave)
             #intFlux = integrate.simps(spec_temp,wave)
             intNorm = flux_phot/intFlux
-            print
-            print "Spec integration = %.2e" % intFlux
-            print "Spec normalization = %.4e" % intNorm
-            print
+            #print
+            #print "Spec integration = %.2e" % intFlux
+            #print "Spec normalization = %.4e" % intNorm
+            #print
 
             #spec_norm = np.mean(spec_temp)
             #spec_temp /= spec_norm
@@ -600,8 +601,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         cube = (subimage[np.newaxis]*spec_temp[:,np.newaxis,np.newaxis]).astype(np.float32)
         # photons/s/m^2/um
         cube = intNorm*cube
-        print "Cube sum = %.2e photons/s/m^2/um" % cube.sum()
-        print "Cube mean = %.2e photons/s/m^2/um" % cube.mean()
+        #print "Cube sum = %.2e photons/s/m^2/um" % cube.sum()
+        #print "Cube mean = %.2e photons/s/m^2/um" % cube.mean()
 
         print
 
@@ -666,7 +667,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             print 'mean flux input cube center (phot/s/m^2/micron): %.2e' % np.mean(cube[:, ys, xs])
             print 'mean counts/spectral channel input cube center (phot/s): %.2e' % np.mean(observedCube[:, ys, xs])
             print 'mean background (phot/s): ', np.mean(backtot)
-        print "CORRECT ABOVE"
+        #print "CORRECT ABOVE"
         
         backgroundCube = np.broadcast_to(backtot[:,np.newaxis,np.newaxis],cube.shape)
         #print backgroundCube
@@ -744,11 +745,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 fig = plt.figure()
                 p = fig.add_subplot(111)
                 #p.plot(wave, filter_tput*cube[:,ys,xs])
-                p.plot(wave, snrCube[:,ys,xs],c="k")
-                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)))
-                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)))
+                p.plot(wave, snrCube[:,ys,xs],c="k",label="Peak flux")
+                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label="Mean flux")
+                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label="Median flux")
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("S/N")
+                leg = p.legend(loc=1,numpoints=1)
                 if png_output:
                     fig.savefig(png_output)
                 else:
@@ -849,8 +851,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             data_cutout = np.array(data_cutout)
             data_cutout_aper = np.array(data_cutout_aper)
-            print data_cutout.shape
-            print data_cutout_aper.shape
+            #print data_cutout.shape
+            #print data_cutout_aper.shape
 
             ####################
             # Main exposure plot
@@ -858,11 +860,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if verb > 0:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
-                p.plot(wave, totime[:,ys,xs],c="k")
-                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)))
-                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)))
+                p.plot(wave, totime[:,ys,xs],c="k",label="Peak flux")
+                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label="Mean flux")
+                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label="Median flux")
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("Total Exposure Time (seconds)")
+                leg = p.legend(loc=1,numpoints=1)
 
                 if png_output:
                     fig.savefig(png_output)
@@ -873,9 +876,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #print np.max(totime)
             #data_cutout = mask.cutout(totime)
             #data_cutout_aper = mask.apply(totime)
-            #print "Min time (peak flux) = %.4f seconds" % np.min(totime)
-            #print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
-            #print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
+            print "Min time (peak flux) = %.4f seconds" % np.min(totime)
+            print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
+            print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
 
             if verb > 1:
                 fig = plt.figure()
@@ -883,13 +886,31 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(totime)
                 plt.show()
 
-  
             # exposure time for aperture 
-            #data_cutout = mask.cutout(tmtImage)
-            #data_cutout_aper = mask.apply(tmtImage)
-            #aper_sum = data_cutout_aper.sum()
-            #totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
-            #print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
+            data_cutout = []
+            data_cutout_aper = []
+            noise_cutout = []
+            noise_cutout_aper = []
+            for n in xrange(dxspectrum): 
+                data_cutout.append(mask.cutout(observedCube[n,:,:]))
+
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = mask.multiply(observedCube[n,:,:]) # in version 0.4 of photutils
+                    noise_cutout_tmp = mask.multiply(noisetotal[n,:,:])
+                else:
+                    data_cutout_tmp = mask.apply(observedCube[n,:,:])
+                    noise_cutout_tmp = mask.apply(noisetotal[n,:,:])
+                data_cutout_aper.append(data_cutout_tmp)
+
+            data_cutout = np.array(data_cutout)
+            data_cutout_aper = np.array(data_cutout_aper)
+            noise_cutout = np.array(noise_cutout)
+            noise_cutout_aper = np.array(noise_cutout_aper)
+
+            aper_sum = data_cutout_aper.sum()
+            noise_sum = np.sqrt((noise_cutout_aper**2).sum())
+            totime =  (snr * np.sqrt(aper_sum+noise_sum)/aper_sum)**2
+            print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime)
 
     ###########################################################################
     ###########################################################################
@@ -1275,8 +1296,8 @@ calc = args.calc
 
 png_output = args.o
 
-print mag
-print flambda
+#print mag
+#print flambda
 #sys.exit()
 
 ###############################################################
