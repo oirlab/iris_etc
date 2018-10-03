@@ -138,7 +138,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         teltot = 1.0
         aotot = 1.0 
 
-        wav  = [840,900,2000,2200,2300,2400] # nm
+        wav  = [830,900,2000,2200,2300,2412] # nm
         
         if mode == "imager":
            tput = [0.631,0.772,0.772,0.813,0.763,0.728] # imager
