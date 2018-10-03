@@ -10,9 +10,9 @@
 
 import argparse, os, sys
 from math import log10,ceil,sqrt,log
-#import ConfigParser   # Python 2.7?
-import configparser
-
+import ConfigParser   # Python 2.7?
+#import configparser
+import json
 
 import numpy as np
 from scipy import integrate,interpolate
@@ -25,7 +25,7 @@ from photutils import CircularAperture, SkyCircularAperture
 from photutils.background import Background2D
 
 import photutils
-print photutils.__version__
+#print photutils.__version__
 
 import matplotlib.pyplot as plt
 
@@ -138,19 +138,19 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         teltot = 1.0
         aotot = 1.0 
 
-        wav  = [840,900,2000,2200,2300,2400] # nm
+        wav  = [830,900,2000,2200,2300,2412] # nm
         
         if mode == "imager":
            tput = [0.631,0.772,0.772,0.813,0.763,0.728] # imager
-           print 'IRIS imager selected!!!'
+           if verb > 1: print 'IRIS imager selected!!!'
         
         else:
            if (scale == 0.004) or (scale == 0.009):
               tput = [0.340,0.420,0.420,0.490,0.440,0.400] # IFS lenslet
-              print 'IRIS lenslet selected!!!'
+              if verb > 1: print 'IRIS lenslet selected!!!'
            else:
               tput = [0.343,0.465,0.465,0.514,0.482,0.451] # IFS slicer
-              print 'IRIS slicer selected!!!'
+              if verb > 1: print 'IRIS slicer selected!!!'
         
         #print tput
         w = (np.arange(dxspectrum)+1)*cdelt1 + crval1  # compute wavelength
@@ -171,9 +171,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
         efftot = instot*teltot*aotot
     
-    print  ' '
+    if verb > 1: print  ' '
     #print  'IRIS efficiency ', efftot
-    print  'Total throughput (TMT+NFIRAOS+IRIS) = %.3f' % efftot
+    if verb > 1: print  'Total throughput (TMT+NFIRAOS+IRIS) = %.3f' % efftot
     
     
     if bgmag:
@@ -399,7 +399,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #print flux/dnu,"erg/s/cm^2/Hz"
     #print flux/dlambda,"erg/s/cm^2/Ang"
 
-    print
+    if verb > 1: print
     #########################################################################
     #########################################################################
 
@@ -416,7 +416,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 
 
-    print image.shape
+    if verb > 1: print image.shape
     if 0: 
         # original code
         xc,yc = [hw_x,hw_y]
@@ -477,7 +477,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
       
         backtot = ohspectrum + contspectrum + bbspectrum
       
-        if verb:
+        if verb >1:
            print 'mean OH: ', np.mean(ohspectrum)
            print 'mean continuum: ', np.mean(contspectrum)
            print 'mean bb: ', np.mean(bbspectrum)
@@ -604,7 +604,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #print "Cube sum = %.2e photons/s/m^2/um" % cube.sum()
         #print "Cube mean = %.2e photons/s/m^2/um" % cube.mean()
 
-        print
+        if verb > 1: print
 
         newcube = np.ones(cube.shape)
         #print newcube.sum()
@@ -625,19 +625,19 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
         # get photons/s per spectral channel, since each spectral
         # channel has the same bandwidth
-        print "Observed cube sum = %.2e photons/s/um" % observedCube.sum()
-        print "Background cube sum = %.2e photons/s/um" % backtot.sum()
+        if verb > 1: print "Observed cube sum = %.2e photons/s/um" % observedCube.sum()
+        if verb > 1: print "Background cube sum = %.2e photons/s/um" % backtot.sum()
         #print "Observed cube mean = %.2e photons/s/um" % observedCube.mean()
 
-        print
+        if verb > 1: print
         observedCube = observedCube*(wave[1]-wave[0])
         backtot = backtot*(wave[1]-wave[0])
-        print "dL = %f micron" % (wave[1]-wave[0])
-        print "Observed cube sum = %.2e photons/s" % observedCube.sum()
-        print "Background cube sum = %.2e photons/s" % backtot.sum()
+        if verb > 1: print "dL = %f micron" % (wave[1]-wave[0])
+        if verb > 1: print "Observed cube sum = %.2e photons/s" % observedCube.sum()
+        if verb > 1: print "Background cube sum = %.2e photons/s" % backtot.sum()
         #print "Observed cube mean = %.2e photons/s" % observedCube.mean()
 
-        print
+        if verb > 1: print
 
 
         ##############
@@ -661,7 +661,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             p.plot(wave, np.sum(cube,axis=(1,2)),c="b")
             plt.show()
 
-        if verb:
+        if verb > 1: 
             print 'n wavelength channels: ', len(wave)
             print 'channel width (micron): ', wave[1]-wave[0]
             print 'mean flux input cube center (phot/s/m^2/micron): %.2e' % np.mean(cube[:, ys, xs])
@@ -671,7 +671,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         
         backgroundCube = np.broadcast_to(backtot[:,np.newaxis,np.newaxis],cube.shape)
         #print backgroundCube
-        print backgroundCube.shape
+        if verb > 1: print backgroundCube.shape
 
 
 
@@ -696,7 +696,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         # Case 1: find s/n for a given exposure time and mag
         ####################################################
         if calc == "snr":
-            print "Case 1: find S/N for a given exposure time and mag"
+            if verb > 1: print "Case 1: find S/N for a given exposure time and mag"
         
             signal = observedCube*np.sqrt(itime*nframes)  # photons/s
             # make a background cube and add noise
@@ -735,9 +735,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             data_cutout = np.array(data_cutout)
             data_cutout_aper = np.array(data_cutout_aper)
-            print data_cutout.shape
-            print data_cutout_aper.shape
-
+            if verb > 1: print data_cutout.shape
+            if verb > 1: print data_cutout_aper.shape
+	    peakSNR=""
+            medianSNR=""
+            meanSNR=""
+	    minexptime=""
+	    medianexptime=""
+	    meanexptime=""	
             ###############
             # Main S/N plot
             ###############
@@ -824,7 +829,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         # Case 2: find integration time for a given s/n and mag
         #######################################################
         elif calc == "exptime":
-            print "Case 2: find integration time for a given S/N and mag"
+            if verb > 1: print "Case 2: find integration time for a given S/N and mag"
             
             # snr = observedCube*np.sqrt(itime*nframes)/np.sqrt(observedCube+noisetotal)
             # itime * nframes =  (snr * np.sqrt(observedCube+noisetotal)/observedCube)**2
@@ -853,7 +858,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout_aper = np.array(data_cutout_aper)
             #print data_cutout.shape
             #print data_cutout_aper.shape
-
+	    peakSNR=""
+            medianSNR=""
+            meanSNR=""
+	    minexptime=""
+	    medianexptime=""
+	    meanexptime=""	
             ####################
             # Main exposure plot
             ####################
@@ -876,9 +886,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #print np.max(totime)
             #data_cutout = mask.cutout(totime)
             #data_cutout_aper = mask.apply(totime)
-            print "Min time (peak flux) = %.4f seconds" % np.min(totime)
-            print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
-            print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
+            if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
+            if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
+            if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
 
             if verb > 1:
                 fig = plt.figure()
@@ -910,7 +920,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             aper_sum = data_cutout_aper.sum()
             noise_sum = np.sqrt((noise_cutout_aper**2).sum())
             totime =  (snr * np.sqrt(aper_sum+noise_sum)/aper_sum)**2
-            print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime)
+            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime)
 
     ###########################################################################
     ###########################################################################
@@ -925,7 +935,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ############################# NOISE ####################################
         # Calculate total background number of photons for whole tel aperture
         #efftot = effao*efftel*effiris #total efficiency 
-        print 'background magnitude: ', backmag
+        if verb > 1: print 'background magnitude: ', backmag
         phots_m2 = (10**(-0.4*backmag)) * zp # phots per sec per m2
         #print phots_m2
         
@@ -953,18 +963,18 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ### Combine detector noise and background (sky+tel+AO)
         #noisetotal = SQRT(noise*noise + background*background)
         noisetotal = noise + background
-        print 'detector noise (e-/s): ', noise
-        print 'total background noise (phot/s):', background
-        print '  '
-        print 'Total Noise (photons per pixel^2)= ', noisetotal
+        if verb > 1: print 'detector noise (e-/s): ', noise
+        if verb > 1: print 'total background noise (phot/s):', background
+        if verb > 1: print '  '
+        if verb > 1: print 'Total Noise (photons per pixel^2)= ', noisetotal
         ###################################################################################################
         
         ## put in the TMT collecting area and efficiency
         tmtImage = subimage*collarea*efftot
         
-        print
-        print
-        print
+        if verb > 1: print
+        if verb > 1: print
+        if verb > 1: print
    
 
 
@@ -973,7 +983,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ####################################################
         if calc == "snr":
 
-            print "Case 1: find S/N for a given exposure time and mag"
+            if verb > 1: print "Case 1: find S/N for a given exposure time and mag"
         
             signal = tmtImage*np.sqrt(itime*nframes)  # photons/s
             noisemap = np.sqrt(tmtImage+noisetotal)
@@ -1058,11 +1068,16 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 data_cutout_aper = mask.multiply(snrMap) # in version 0.4 of photutils
             else:
                 data_cutout_aper = mask.apply(snrMap)
-
+            peakSNR=str("%0.4f" %np.max(snrMap))
+            medianSNR=str("%0.4f" %np.median(data_cutout_aper))
+            meanSNR=str("%0.4f" %np.mean(data_cutout_aper))
+	    minexptime=""
+	    medianexptime=""
+	    meanexptime=""
             #print np.min(snrMap)
-            print "Peak S/N = %.4f" % np.max(snrMap)
-            print "Median S/N = %.4f" % np.median(data_cutout_aper)
-            print "Mean S/N = %.4f" % np.mean(data_cutout_aper)
+            if verb > 1: print "Peak S/N = %.4f" % np.max(snrMap)
+            if verb > 1: print "Median S/N = %.4f" % np.median(data_cutout_aper)
+            if verb > 1: print "Mean S/N = %.4f" % np.mean(data_cutout_aper)
             
             if verb > 1:
                 fig = plt.figure()
@@ -1073,7 +1088,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             phot_table = aperture_photometry(signal, aperture, error=noisemap)
             #print phot_table
             snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
-            print 'S/N (aperture = %.4f") = %.4f' % (2*radius*scale, snr_int[0])
+            if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (2*radius*scale, snr_int[0])
             
             if verb > 1:
                 phot_table = aperture_photometry(signal, apertures, error=noisemap)
@@ -1096,16 +1111,16 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #   endfor
             #endfor
             
-            print
-            print
-            print
+            if verb > 1: print
+            if verb > 1: print
+            if verb > 1: print
     
         #######################################################
         # Case 2: find integration time for a given s/n and mag
         #######################################################
         elif calc == "exptime":
 
-            print "Case 2: find integration time for a given S/N and mag"
+            if verb > 1: print "Case 2: find integration time for a given S/N and mag"
             
             # snr = tmtImage*np.sqrt(itime*nframes)/np.sqrt(tmtImage+noisetotal)
             # itime * nframes =  (snr * np.sqrt(tmtImage+noisetotal)/tmtImage)**2
@@ -1121,9 +1136,15 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 data_cutout_aper = mask.multiply(totime) # in version 0.4 of photutils
             else:
                 data_cutout_aper = mask.apply(totime)
-            print "Min time (peak flux) = %.4f seconds" % np.min(totime)
-            print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
-            print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
+            minexptime= str("%0.4f" %np.min(totime))
+            medianexptime= str("%0.4f" %np.median(data_cutout_aper))
+            meanexptime=  str("%0.4f" %np.mean(data_cutout_aper))
+	    peakSNR=""
+            medianSNR=""
+            meanSNR=""                
+            if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
+            if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
+            if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
 
             if verb > 1:
                 fig = plt.figure()
@@ -1141,9 +1162,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 data_cutout_aper = mask.apply(tmtImage)
             aper_sum = data_cutout_aper.sum()
             totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
-            print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
+            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
             
-
+    jsondict={"mag":mag,"peakSNR":peakSNR,"medianSNR":medianSNR,"meanSNR":meanSNR,"minexptime":minexptime,"medianexptime":medianexptime,"meanexptime":meanexptime,"fluxdensity":str("%0.4e" %flambda[0])}
+    print(json.dumps(jsondict))  
         
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
         #tmtImage_sum = tmtImage_aper["aperture_sum"]
@@ -1252,14 +1274,13 @@ if not os.path.exists('config.ini'):
     sys.exit()
 
 try:
-    config = configparser.ConfigParser()
-    #config = ConfigParser.ConfigParser()
+    #config = configparser.ConfigParser()
+    config = ConfigParser.ConfigParser()
     config.read('config.ini')
-    #simdir = config.get('CONFIG','simdir')
-    simdir = config['CONFIG']['simdir']
-    #psfdir = config.get('CONFIG','psfdir')
-    psfdir = config['CONFIG']['psfdir']
-
+    simdir = config.get('CONFIG','simdir')
+    #simdir = config['CONFIG']['simdir']
+    psfdir = config.get('CONFIG','psfdir')
+    #psfdir = config['CONFIG']['psfdir']
 except:
     print "Problem with config.ini file!"
     print "Missing parameter?"
