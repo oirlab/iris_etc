@@ -13,7 +13,7 @@ from math import log10,ceil,sqrt,log
 import ConfigParser   # Python 2.7?
 #import configparser
 import json
-
+from collections import OrderedDict
 import numpy as np
 from scipy import integrate,interpolate
 
@@ -95,6 +95,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #           mode - either "imager" or "ifs"
     #           calc - either "snr" or "exptime"
     
+    #fixed radius 0.2 arc sec
+    radius=0.2   
     radius /= scale
   
     if spectrum.lower() == "vega": 
@@ -115,6 +117,18 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #print lambdamax
     #print lambdac
     #print bw
+    
+    #various scales of lambda/D radius according to scale 
+    if scale==0.004:
+	radiusl=2*lambdac[0]*206265/3.e11
+    elif scale==0.009 :
+        radiusl=3*lambdac[0]*206265/3.e11
+    elif scale==0.025 :
+        radiusl=40*lambdac[0]*206265/3.e11
+    else:
+        radiusl=80*lambdac[0]*206265/3.e11
+    sizel=2*radiusl
+    radiusl /= scale
     
     ## Determine the length of the cube, dependent on filter 
     ## (supporting only BB for now)
@@ -456,6 +470,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     masks = aperture.to_mask(method='center')
     mask = masks[0]
 
+    aperturel = CircularAperture([xs,ys], r=radiusl)
+    #print radius
+    #print radiusl
+    masksl = aperturel.to_mask(method='center')
+    maskl = masksl[0]
+
+
     ###########################################################################
     ###########################################################################
     # IFS MODE
@@ -690,8 +711,6 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #noisetotal = SQRT(noise*noise + background*background)
         noisetotal = noise + backgroundCube
 
-
-
         ####################################################
         # Case 1: find s/n for a given exposure time and mag
         ####################################################
@@ -719,6 +738,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
           
             data_cutout = []
             data_cutout_aper = []
+            data_cutoutl = []
+            data_cutout_aperl = []	    
             for n in xrange(dxspectrum): 
                 data_cutout.append(mask.cutout(snrCube[n,:,:]))
                 if photutils.__version__ == "0.4":
@@ -726,7 +747,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 else:
                     data_cutout_tmp = mask.apply(snrCube[n,:,:])
                 data_cutout_aper.append(data_cutout_tmp)
-
+            for n in xrange(dxspectrum): 
+                data_cutoutl.append(maskl.cutout(snrCube[n,:,:]))
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = maskl.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
+                else:
+                    data_cutout_tmp = maskl.apply(snrCube[n,:,:])
+                data_cutout_aperl.append(data_cutout_tmp)
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
                 #    p = fig.add_subplot(111)
@@ -735,14 +762,20 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             data_cutout = np.array(data_cutout)
             data_cutout_aper = np.array(data_cutout_aper)
+            data_cutoutl = np.array(data_cutoutl)
+            data_cutout_aperl = np.array(data_cutout_aperl)	    
             if verb > 1: print data_cutout.shape
             if verb > 1: print data_cutout_aper.shape
 	    peakSNR=""
-            medianSNR=""
-            meanSNR=""
+	    medianSNR=""
+	    meanSNR=""
+	    medianSNRl=""
+	    meanSNRl=""	    
 	    minexptime=""
 	    medianexptime=""
-	    meanexptime=""	
+	    meanexptime=""
+	    medianexptimel=""
+	    meanexptimel=""	    	
             ###############
             # Main S/N plot
             ###############
@@ -750,12 +783,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 fig = plt.figure()
                 p = fig.add_subplot(111)
                 #p.plot(wave, filter_tput*cube[:,ys,xs])
-                p.plot(wave, snrCube[:,ys,xs],c="k",label="Peak flux")
-                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label="Mean flux")
-                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label="Median flux")
+                p.plot(wave, snrCube[:,ys,xs],c="k",label="Peak Flux")
+                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]')
+                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label='Median Flux [Aperture : 0.2"]')
+                p.plot(wave, np.mean(data_cutout_aperl,axis=(1,2)),label="Mean Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
+                p.plot(wave, np.median(data_cutout_aperl,axis=(1,2)),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("S/N")
-                leg = p.legend(loc=1,numpoints=1)
+                leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
                 if png_output:
                     fig.savefig(png_output)
                 else:
@@ -839,6 +874,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             
             data_cutout = []
             data_cutout_aper = []
+            data_cutoutl = []
+            data_cutout_aperl = []	    
             for n in xrange(dxspectrum): 
                 data_cutout.append(mask.cutout(totime[n,:,:]))
 
@@ -847,6 +884,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 else:
                     data_cutout_tmp = mask.apply(totime[n,:,:])
                 data_cutout_aper.append(data_cutout_tmp)
+            for n in xrange(dxspectrum): 
+                data_cutoutl.append(maskl.cutout(totime[n,:,:]))
+
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = maskl.multiply(totime[n,:,:]) # in version 0.4 of photutils
+                else:
+                    data_cutout_tmp = maskl.apply(totime[n,:,:])
+                data_cutout_aperl.append(data_cutout_tmp)
 
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
@@ -856,26 +901,34 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             data_cutout = np.array(data_cutout)
             data_cutout_aper = np.array(data_cutout_aper)
+            data_cutoutl = np.array(data_cutoutl)
+            data_cutout_aperl = np.array(data_cutout_aperl)	    
             #print data_cutout.shape
             #print data_cutout_aper.shape
 	    peakSNR=""
             medianSNR=""
             meanSNR=""
+            medianSNRl=""
+            meanSNRl=""	    
 	    minexptime=""
 	    medianexptime=""
-	    meanexptime=""	
+	    meanexptime=""
+	    medianexptimel=""
+	    meanexptimel=""	    	
             ####################
             # Main exposure plot
             ####################
             if verb > 0:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
-                p.plot(wave, totime[:,ys,xs],c="k",label="Peak flux")
-                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label="Mean flux")
-                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label="Median flux")
+                p.plot(wave, totime[:,ys,xs],c="k",label="Peak Flux")
+                p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]' )
+                p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label='Median Flux  [Aperture : 0.2"]')
+                p.plot(wave, np.mean(data_cutout_aperl,axis=(1,2)),label="Mean Flux  [Aperture : "+"{:.3f}".format(sizel)+'"]')
+                p.plot(wave, np.median(data_cutout_aperl,axis=(1,2)),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("Total Exposure Time (seconds)")
-                leg = p.legend(loc=1,numpoints=1)
+                leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
 
                 if png_output:
                     fig.savefig(png_output)
@@ -1064,16 +1117,23 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             
             #image = mask.to_image(shape=((200, 200)))
             data_cutout = mask.cutout(snrMap)
+	    data_cutoutl = maskl.cutout(snrMap)
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(snrMap) # in version 0.4 of photutils
+		data_cutout_aperl = maskl.multiply(snrMap) # in version 0.4 of photutils
             else:
                 data_cutout_aper = mask.apply(snrMap)
-            peakSNR=str("%0.4f" %np.max(snrMap))
-            medianSNR=str("%0.4f" %np.median(data_cutout_aper))
-            meanSNR=str("%0.4f" %np.mean(data_cutout_aper))
+                data_cutout_aperl = maskl.apply(snrMap)		
+	    peakSNR=str("%0.4f" %np.max(snrMap))
+	    medianSNR=str("%0.4f" %np.median(data_cutout_aper))
+	    meanSNR=str("%0.4f" %np.mean(data_cutout_aper))
+	    medianSNRl=str("%0.4f" %np.median(data_cutout_aperl))
+	    meanSNRl=str("%0.4f" %np.mean(data_cutout_aperl))	    
 	    minexptime=""
 	    medianexptime=""
 	    meanexptime=""
+	    medianexptimel=""
+	    meanexptimel=""	    
             #print np.min(snrMap)
             if verb > 1: print "Peak S/N = %.4f" % np.max(snrMap)
             if verb > 1: print "Median S/N = %.4f" % np.median(data_cutout_aper)
@@ -1132,16 +1192,23 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #print totime
             #print np.max(totime)
             data_cutout = mask.cutout(totime)
+            data_cutoutl = maskl.cutout(totime)	    
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(totime) # in version 0.4 of photutils
+                data_cutout_aperl = maskl.multiply(totime) # in version 0.4 of photutils		
             else:
                 data_cutout_aper = mask.apply(totime)
-            minexptime= str("%0.4f" %np.min(totime))
-            medianexptime= str("%0.4f" %np.median(data_cutout_aper))
-            meanexptime=  str("%0.4f" %np.mean(data_cutout_aper))
+                data_cutout_aperl = maskl.apply(totime)		
+	    minexptime= str("%0.4f" %np.min(totime))
+	    medianexptime= str("%0.4f" %np.median(data_cutout_aper))
+	    meanexptime=  str("%0.4f" %np.mean(data_cutout_aper))
+	    medianexptimel= str("%0.4f" %np.median(data_cutout_aperl))
+	    meanexptimel=  str("%0.4f" %np.mean(data_cutout_aperl))	    
 	    peakSNR=""
-            medianSNR=""
-            meanSNR=""                
+	    medianSNR=""
+	    meanSNR=""  
+	    medianSNRl=""
+	    meanSNRl="" 	                  
             if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
             if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
             if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
@@ -1164,7 +1231,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
             
-    jsondict={"mag":mag,"peakSNR":peakSNR,"medianSNR":medianSNR,"meanSNR":meanSNR,"minexptime":minexptime,"medianexptime":medianexptime,"meanexptime":meanexptime,"fluxdensity":str("%0.4e" %flambda[0])}
+    #jsondict={'Magnitude of Source (Vega)':mag,'Peak Value of SNR':peakSNR,'Median Value of SNR (Aperture =0.4")':medianSNR,'Mean Value of SNR (Aperture =0.4")':meanSNR,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':medianSNRl,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':meanSNRl,'Exposure time (Minimum) ':minexptime,'Median Value of Exposure time (Aperture =0.4\")':medianexptime,'Mean Value of Exposure time (Aperture =0.4")':meanexptime,'Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':medianexptimel,'Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':meanexptimel,"Flux density of Source":str("%0.4e" %flambda[0])}
+    jsondict=OrderedDict([('Magnitude of Source [Vega]',str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda[0])),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Exposure time for Peak Flux ',minexptime),('Median Value of Exposure time (Aperture =0.4\")',medianexptime),('Mean Value of Exposure time (Aperture =0.4")',meanexptime),('Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel)])
+
     print(json.dumps(jsondict))  
         
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
