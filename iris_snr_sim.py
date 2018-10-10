@@ -72,7 +72,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
              spectrum = "Vega", lam_obs = 2.22, line_width = 200.,
              png_output = None, zenith_angle = 30. , atm_cond = 50.,
              psf_loc = [8.8, 8.8], psf_time = 1.4, verb = 1, psf_old = 0, 
-             simdir='~/data/iris/sim/', psfdir='~/data/iris/sim/'):
+             simdir='~/data/iris/sim/', psfdir='~/data/iris/sim/', test = 0):
+
+    #print flambda
+    #print mag
 
     # KEYWORDS: filter - broadband filter to use (default: 'K')
     #           mag - magnitude of the point source
@@ -127,7 +130,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         radiusl=40*lambdac[0]*206265/3.e11
     else:
         radiusl=80*lambdac[0]*206265/3.e11
-    sizel=2*radiusl
+    sizel=radiusl
     radiusl /= scale
     
     ## Determine the length of the cube, dependent on filter 
@@ -275,24 +278,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #print image.sum()
     #image /= image.sum()
 
-    flux_phot = zp*10**(-0.4*mag) # photons/s/m^2
-
-    #########################################################################
-    #########################################################################
-    # comparison:
-    #########################################################################
-    # http://ssc.spitzer.caltech.edu/warmmission/propkit/pet/magtojy/
-    # input: Johnson
-    #        20 K-banda
-    #        2.22 micron
-    # output:
-    #        6.67e-29 erg/s/cm^2/Hz
-    #        4.06e-19 erg/s/cm^2/Ang
-    #########################################################################
-
     #  mag = ABmag - 0.91 ; Vega magnitude
-
-    # convert AB to Vega
+    ##########################################
+    # convert AB to Vega and vice versa
              # band  eff     mAB - mVega
     ABconv = [["i",  0.7472, 0.37 ],
               ["z",  0.8917, 0.54 ],
@@ -321,31 +309,71 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     delta = R_x(lambdac/1e4)
 
     #print delta
-
     # delta = mAB - mVega
-    ABmag = mag + delta
-    #print ABmag
-    #################################################################
 
-    fnu = 10**(-0.4*(ABmag + 48.60))                 # erg/s/cm^2/Hz
-    #print "Calculated from magnitude"
-    #print fnu,"erg/s/cm^2/Hz"
-    #flambda = fnu*Ang/((lam_obs*mu)**2/c)
-    flambda = fnu*Ang/((lambdac*Ang)**2/c)
-    #print flambda,"erg/s/cm^2/Ang"
-    #nu = c/(lam_obs*mu)
-    #print nu,"Hz"
-    #dnu = nu/(2*resolution)
-    #dlambda = lam_obs*1e4/(2*resolution)
-    #dlambda = (wf-wi) # Ang
-    #print dlambda, "Ang"
-    #print dnu, "Hz"
-    #print fnu*dnu,"erg/s/cm^2"
-    #print flambda*lambdac,"erg/s/cm^2"
-    E_phot = (h*c)/(lambdac*Ang) # erg
-    #print flambda*lambdac/E_phot,"photons/s/cm^2"
-    #print flambda/E_phot,"photons/s/cm^2/Ang"
-    # above is correct!!
+    ##########################################
+
+    if mag is not None:
+        # convert to flux density (flambda)
+        ABmag = mag + delta
+        fnu = 10**(-0.4*(ABmag + 48.60))                 # erg/s/cm^2/Hz
+        #print "Calculated from magnitude"
+        #print fnu,"erg/s/cm^2/Hz"
+        #flambda = fnu*Ang/((lam_obs*mu)**2/c)
+        flambda = fnu*Ang/((lambdac*Ang)**2/c)
+        flambda=flambda[0]
+    elif flambda is not None:
+        # convert to Vega mag
+        fnu = flambda/(Ang/((lambdac*Ang)**2/c))
+        #print "Calculated from magnitude"
+        #print fnu,"erg/s/cm^2/Hz"
+        ABmag = -2.5* log10(fnu) - 48.60
+        mag = ABmag - delta
+        # print mag
+
+    #print flambda
+    #print mag
+
+    flux_phot = zp*10**(-0.4*mag) # photons/s/m^2
+
+
+    #########################################################################
+    #########################################################################
+    # comparison:
+    #########################################################################
+    # http://ssc.spitzer.caltech.edu/warmmission/propkit/pet/magtojy/
+    # input: Johnson
+    #        20 K-banda
+    #        2.22 micron
+    # output:
+    #        6.67e-29 erg/s/cm^2/Hz
+    #        4.06e-19 erg/s/cm^2/Ang
+    #########################################################################
+
+
+    #################################################################
+    # tests
+    #################################################################
+    if test:
+        fnu = 10**(-0.4*(ABmag + 48.60))                 # erg/s/cm^2/Hz
+        #print "Calculated from magnitude"
+        #print fnu,"erg/s/cm^2/Hz"
+        #flambda = fnu*Ang/((lam_obs*mu)**2/c)
+        flambda = fnu*Ang/((lambdac*Ang)**2/c)
+        #print flambda,"erg/s/cm^2/Ang"
+        #nu = c/(lam_obs*mu)
+        #print nu,"Hz"
+        #dnu = nu/(2*resolution)
+        #dlambda = lam_obs*1e4/(2*resolution)
+        #dlambda = (wf-wi) # Ang
+        #print dlambda, "Ang"
+        #print dnu, "Hz"
+        #print fnu*dnu,"erg/s/cm^2"
+        #print flambda*lambdac,"erg/s/cm^2"
+        E_phot = (h*c)/(lambdac*Ang) # erg
+        #print flambda*lambdac/E_phot,"photons/s/cm^2"
+        #print flambda/E_phot,"photons/s/cm^2/Ang"
+        # above is correct!!
     ########################################################################
     if verb > 1:
         # Vega test spectrum
@@ -1232,7 +1260,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
             
     #jsondict={'Magnitude of Source (Vega)':mag,'Peak Value of SNR':peakSNR,'Median Value of SNR (Aperture =0.4")':medianSNR,'Mean Value of SNR (Aperture =0.4")':meanSNR,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':medianSNRl,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':meanSNRl,'Exposure time (Minimum) ':minexptime,'Median Value of Exposure time (Aperture =0.4\")':medianexptime,'Mean Value of Exposure time (Aperture =0.4")':meanexptime,'Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':medianexptimel,'Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':meanexptimel,"Flux density of Source":str("%0.4e" %flambda[0])}
-    jsondict=OrderedDict([('Magnitude of Source [Vega]',str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda[0])),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Exposure time for Peak Flux [s]',minexptime),('Median Value of Exposure time [s] (Aperture =0.4\")',medianexptime),('Mean Value of Exposure time [s] (Aperture =0.4")',meanexptime),('Median Value of Exposure time [s] (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Mean Value of Exposure time [s] (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel)])
+    jsondict=OrderedDict([('Magnitude of Source [Vega]',str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Exposure time [s] for Peak Flux ',minexptime),('Median Value of Exposure time [s] (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Mean Value of Exposure time [s] (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Median Value of Exposure time [s] (Aperture =0.4\")',medianexptime),('Mean Value of Exposure time [s] (Aperture =0.4")',meanexptime)])
 
     print(json.dumps(jsondict))  
         
@@ -1263,6 +1291,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 
 # ~/python.linux/dev/iris/snr/iris_snr_sim.py
+# ~/python.linux/packages/IRIS_snr_sim/iris_snr_sim.py
+
     
 # Usage:
 #  Imager mode
@@ -1333,9 +1363,9 @@ parser.add_argument('-o', nargs='?', metavar='value', default=None,
 
 group1 = parser.add_mutually_exclusive_group(required=True)
 group1.add_argument('-mag', metavar='value', type=float, nargs='?',
-                    default=21.0, help='magnitude of source [Vega]')
+                    default=None, help='magnitude of source [Vega]')
 group1.add_argument('-flambda', metavar='value', type=float, nargs='?',
-                    default=1.62e-19, help='flux density of source [erg/s/cm^2/Ang]')
+                    default=None, help='flux density of source [erg/s/cm^2/Ang]')
 
 
 if not os.path.exists('config.ini'):
@@ -1398,10 +1428,11 @@ png_output = args.o
 ###############################################################
 
 IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
-         resolution=resolution, filter=filter, scale=scale, simdir=simdir,
-         spectrum=spectrum, lam_obs = wavelength, line_width = line_width, 
-         zenith_angle=zenith_angle, atm_cond=atm_cond, psf_loc=psf_loc,
-         png_output=png_output, psfdir=psfdir, psf_old=psf_old, verb=1)
+         flambda=flambda, resolution=resolution, filter=filter, scale=scale,
+         simdir=simdir, spectrum=spectrum, lam_obs = wavelength, 
+         line_width = line_width, zenith_angle=zenith_angle, atm_cond=atm_cond,
+         psf_loc=psf_loc, png_output=png_output, psfdir=psfdir, 
+         psf_old=psf_old, verb=1)
 
 
 
