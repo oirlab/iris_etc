@@ -130,7 +130,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         radiusl=40*lambdac[0]*206265/3.e11
     else:
         radiusl=80*lambdac[0]*206265/3.e11
-    sizel=radiusl
+    sizel=2*radiusl
     radiusl /= scale
     
     ## Determine the length of the cube, dependent on filter 
