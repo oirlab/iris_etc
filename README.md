@@ -3,7 +3,7 @@
 Simple TMT IRIS ETC based on IRIS simulator (see ).  It calculates the (1)
 exposure time to reach a specific S/N and (2) S/N for a given exposure time.
 
-*Authors: Greg Walth (UC San Diego)*
+*Authors: Greg Walth (Carnegie Observatories), Arun Surya (UC San Diego), Nils Rundquist (UC San Diego)*
 *Contributors: Andrey Vayner (UC San Diego)*
 
 ## Requirements:
