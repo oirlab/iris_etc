@@ -956,7 +956,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 #p.plot(wave, np.mean(data_cutout_aperl,axis=(1,2)),label="Mean Flux  [Aperture : "+"{:.3f}".format(sizel)+'"]')
                 p.plot(wave, np.median(data_cutout_aperl,axis=(1,2)),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
                 p.set_xlabel("Wavelength ($\mu$m)")
-                p.set_ylabel("Total Exposure Time (seconds)")
+                p.set_ylabel("Total Integration time (seconds)")
                 leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
 
                 if png_output:
@@ -1261,7 +1261,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
             
     #jsondict={'Magnitude of Source (Vega)':mag,'Peak Value of SNR':peakSNR,'Median Value of SNR (Aperture =0.4")':medianSNR,'Mean Value of SNR (Aperture =0.4")':meanSNR,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':medianSNRl,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':meanSNRl,'Exposure time (Minimum) ':minexptime,'Median Value of Exposure time (Aperture =0.4\")':medianexptime,'Mean Value of Exposure time (Aperture =0.4")':meanexptime,'Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':medianexptimel,'Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':meanexptimel,"Flux density of Source":str("%0.4e" %flambda[0])}
-    jsondict=OrderedDict([('Magnitude of Source [Vega]',str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Exposure time [s] for Peak Flux ',minexptime),('Median Value of Exposure time [s] (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Mean Value of Exposure time [s] (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Median Value of Exposure time [s] (Aperture =0.4\")',''),('Mean Value of Exposure time [s] (Aperture =0.4")','')])
+    jsondict=OrderedDict([('Magnitude of Source [Vega]',str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Median Value of Exposure time [s] (Aperture =0.4\")',''),('Mean Value of Exposure time [s] (Aperture =0.4")','')])
 
     print(json.dumps(jsondict))  
         
