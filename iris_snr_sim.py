@@ -322,6 +322,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #flambda = fnu*Ang/((lam_obs*mu)**2/c)
         flambda = fnu*Ang/((lambdac*Ang)**2/c)
         flambda=flambda[0]
+
     elif flambda is not None:
         # convert to Vega mag
         fnu = flambda/(Ang/((lambdac*Ang)**2/c))
