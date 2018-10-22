@@ -813,8 +813,17 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout_aper = np.array(data_cutout_aper)
             data_cutoutl = np.array(data_cutoutl)
             data_cutout_aperl = np.array(data_cutout_aperl)	    
+
             if verb > 1: print data_cutout.shape
             if verb > 1: print data_cutout_aper.shape
+            ###########################
+            # summation of the aperture
+            ###########################
+            #aper_sum = data_cutout_aper.sum()
+            #noise_sum = np.sqrt((noise_cutout_aper**2).sum())
+            #snr_int =  aper_sum/noise_sum
+            #if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (2*radius*scale, snr_int)
+
 	    peakSNR=""
 	    medianSNR=""
 	    meanSNR=""
@@ -925,6 +934,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout_aper = []
             data_cutoutl = []
             data_cutout_aperl = []	    
+
             for n in xrange(dxspectrum): 
                 data_cutout.append(mask.cutout(totime[n,:,:]))
 
@@ -933,6 +943,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 else:
                     data_cutout_tmp = mask.apply(totime[n,:,:])
                 data_cutout_aper.append(data_cutout_tmp)
+
             for n in xrange(dxspectrum): 
                 data_cutoutl.append(maskl.cutout(totime[n,:,:]))
 
@@ -952,6 +963,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout_aper = np.array(data_cutout_aper)
             data_cutoutl = np.array(data_cutoutl)
             data_cutout_aperl = np.array(data_cutout_aperl)	    
+
             #print data_cutout.shape
             #print data_cutout_aper.shape
 	    peakSNR=""
@@ -995,7 +1007,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if verb > 1:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
-                p.imshow(totime)
+                p.imshow(totime[0,:,:])
                 plt.show()
 
             # exposure time for aperture 
@@ -1019,6 +1031,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             noise_cutout = np.array(noise_cutout)
             noise_cutout_aper = np.array(noise_cutout_aper)
 
+            ###########################
+            # summation of the aperture
+            ###########################
             aper_sum = data_cutout_aper.sum()
             noise_sum = np.sqrt((noise_cutout_aper**2).sum())
             totime =  (snr * np.sqrt(aper_sum+noise_sum)/aper_sum)**2
@@ -1196,6 +1211,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             
             phot_table = aperture_photometry(signal, aperture, error=noisemap)
             #print phot_table
+            ###########################
+            # summation of the aperture
+            ###########################
             snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
             if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (2*radius*scale, snr_int[0])
             
@@ -1263,9 +1281,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
 
             if verb > 1:
+                print totime.shape
                 fig = plt.figure()
                 p = fig.add_subplot(111)
-                p.imshow(totime)
+                p.imshow(totime[0,:])
                 plt.show()
 
   
@@ -1277,6 +1296,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             else:
                 data_cutout_aper = mask.apply(tmtImage)
             aper_sum = data_cutout_aper.sum()
+            ###########################
+            # summation of the aperture
+            ###########################
             totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
             
