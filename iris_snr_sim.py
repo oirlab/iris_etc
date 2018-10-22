@@ -8,6 +8,7 @@
 # R -> read noise (electrons)
 
 
+
 import argparse, os, sys
 from math import log10,ceil,sqrt,log
 import ConfigParser   # Python 2.7?
@@ -23,6 +24,9 @@ from astropy.modeling import models
 from photutils import aperture_photometry
 from photutils import CircularAperture, SkyCircularAperture
 from photutils.background import Background2D
+
+from astropy.convolution import Tophat2DKernel
+from scipy.signal import convolve2d
 
 import photutils
 #print photutils.__version__
@@ -70,7 +74,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
              resolution = 4000, collarea = 630.0, positions = [0, 0],
              bgmag = None, efftot = None, mode = "imager", calc = "snr",
              spectrum = "Vega", lam_obs = 2.22, line_width = 200.,
-             png_output = None, zenith_angle = 30. , atm_cond = 50.,
+             png_output = None, zenith_angle = 30. , atm_cond = 50.,source='point_source',source_size=0.2,
              psf_loc = [8.8, 8.8], psf_time = 1.4, verb = 1, psf_old = 0, 
              simdir='~/data/iris/sim/', psfdir='~/data/iris/sim/', test = 0):
 
@@ -123,13 +127,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     
     #various scales of lambda/D radius according to scale 
     if scale==0.004:
-	radiusl=2*lambdac[0]*206265/3.e11
+	radiusl=1*lambdac[0]*206265/3.e11
     elif scale==0.009 :
-        radiusl=3*lambdac[0]*206265/3.e11
+        radiusl=1.5*lambdac[0]*206265/3.e11
     elif scale==0.025 :
-        radiusl=40*lambdac[0]*206265/3.e11
+        radiusl=20*lambdac[0]*206265/3.e11
     else:
-        radiusl=80*lambdac[0]*206265/3.e11
+        radiusl=40*lambdac[0]*206265/3.e11
     sizel=2*radiusl
     radiusl /= scale
     
@@ -144,8 +148,6 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     crval1 = wi/10.                      # nm
     cdelt1 = ((wf-wi) / dxspectrum)/10.  # nm/channel
     #print dxspectrum
-
-
     # Throughput calculation    
     if efftot is None: 
 
@@ -200,7 +202,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
        imagmag = filterdat["imagmag"] #integrated BB background
        if mode == "imager": backmag = imagmag ## use the integrated background if specified
     zp = filterdat["zp"]
-
+    #print 'zp',zp
+    #print 'backmag',backmag
     # test case
     # PSFs
     #print lambdac
@@ -266,6 +269,21 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     head = pf[ext].header
     #print head['COMMENT']
 
+    image /= image.sum()
+    psf_extend=np.array(image)
+    
+    if source=='extended':
+	#print source_size
+	objszpix= source_size/scale
+	window=300
+	centerx=psf_extend.shape[0]/2
+        centery=psf_extend.shape[1]/2
+        psf_extend=psf_extend[centerx-(window/2):centerx+(window/2),centery-(window/2):centery+(window/2)]
+	obj = Tophat2DKernel(objszpix) #object tophat normalised
+        obj=np.array(obj)
+        obj /= obj.max()
+	#print obj.shape,psf_extend.shape
+	image=convolve2d(obj,psf_extend)
     # position of center of PSF
     x_im_size,y_im_size = image.shape
     hw_x = x_im_size/2
@@ -489,7 +507,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
     
     # normalize by the full PSF image
-    subimage /= image.sum()
+    #subimage /= image.sum()
+    
+
 
     # to define apertures used throughout the calculations
     radii = np.arange(1,50,1) # pixels
@@ -1261,7 +1281,17 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
             
     #jsondict={'Magnitude of Source (Vega)':mag,'Peak Value of SNR':peakSNR,'Median Value of SNR (Aperture =0.4")':medianSNR,'Mean Value of SNR (Aperture =0.4")':meanSNR,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':medianSNRl,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':meanSNRl,'Exposure time (Minimum) ':minexptime,'Median Value of Exposure time (Aperture =0.4\")':medianexptime,'Mean Value of Exposure time (Aperture =0.4")':meanexptime,'Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':medianexptimel,'Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':meanexptimel,"Flux density of Source":str("%0.4e" %flambda[0])}
-    jsondict=OrderedDict([('Magnitude of Source [Vega]',str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Median Value of Exposure time [s] (Aperture =0.4\")',''),('Mean Value of Exposure time [s] (Aperture =0.4")','')])
+    if calc == "exptime":
+	inputstr='Input SNR'
+	inputvalue=str(snr)
+    else:
+	inputstr= 'Input integration time [s]' 
+	inputvalue=str(nframes*itime)
+    if source == "extended":
+	magadd='[per square arcsecond]'
+    else:
+	magadd=''			
+    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel)])
 
     print(json.dumps(jsondict))  
         
@@ -1346,8 +1376,10 @@ parser.add_argument('-calc', choices=['snr','exptime'], required=True,
                     help='calculation performed')
 parser.add_argument('-mode', choices=['imager','IFS'], required=True,
                     help='instrumental mode')
-
-
+parser.add_argument('-source', metavar='value', type=str, nargs='?',
+                    default="point_source", help='[point_source, extended]')
+parser.add_argument('-source_size', metavar='value', type=float, nargs='?',
+                    default="0.2", help='size of extended object in arcsecond')                   
 parser.add_argument('-zenith-angle', type=float, metavar='value', nargs='?',
                     default=30., help='zenith angle of simulated PSF [degrees]')
 parser.add_argument('-atm-cond', type=float, metavar='value', nargs='?',
@@ -1414,7 +1446,8 @@ snr = args.snr
 
 mode = args.mode
 calc = args.calc
-
+source=args.source
+source_size=args.source_size
 png_output = args.o
 
 #print mag
@@ -1432,7 +1465,7 @@ IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
          flambda=flambda, resolution=resolution, filter=filter, scale=scale,
          simdir=simdir, spectrum=spectrum, lam_obs = wavelength, 
          line_width = line_width, zenith_angle=zenith_angle, atm_cond=atm_cond,
-         psf_loc=psf_loc, png_output=png_output, psfdir=psfdir, 
+         psf_loc=psf_loc, png_output=png_output, psfdir=psfdir, source=source,source_size=source_size,
          psf_old=psf_old, verb=1)
 
 
