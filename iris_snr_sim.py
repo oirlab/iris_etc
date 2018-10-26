@@ -70,13 +70,13 @@ def extrap1d(interpolator):
 
 
 def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
-             nframes = 1, snr = 10.0, radius = 0.024, gain = 1.0, 
+             nframes = 1, snr = 10.0, radius = 0.024, gain = 1.0,
              readnoise = 5., darkcurrent = 0.002, scale = 0.004,
              resolution = 4000, collarea = 630.0, positions = [0, 0],
              bgmag = None, efftot = None, mode = "imager", calc = "snr",
              spectrum = "Vega", lam_obs = 2.22, line_width = 200.,
              png_output = None, zenith_angle = 30. , atm_cond = 50.,source='point_source',source_size=0.2,
-             psf_loc = [8.8, 8.8], psf_time = 1.4, verb = 1, psf_old = 0, 
+             psf_loc = [8.8, 8.8], psf_time = 1.4, verb = 1, psf_old = 0,
              simdir='~/data/iris/sim/', psfdir='~/data/iris/sim/', test = 0):
 
     #print flambda
@@ -84,7 +84,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
     # KEYWORDS: filter - broadband filter to use (default: 'K')
     #           mag - magnitude of the point source
-    #           itime - integration time per frame (default: 900 s) 
+    #           itime - integration time per frame (default: 900 s)
     #           nframes - number of observations (default: 1)
     #           snr - signal-to-noise of source
     #           radius - aperture radius in arcsec
@@ -97,21 +97,21 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #           positions - position of point source
     #           bgmag  - the background magnitude (default: sky
     #                    background corresponding to input filter)
-    #           efftot - total throughput 
+    #           efftot - total throughput
     #           verb - verbosity level
 
     #           mode - either "imager" or "ifs"
     #           calc - either "snr" or "exptime"
-    
+
     #fixed radius 0.2 arc sec
-    radius=0.1   
+    radius=0.1
     radius /= scale
-  
-    if spectrum.lower() == "vega": 
+
+    if spectrum.lower() == "vega":
        spectrum = "vega_all.fits"
        #spectrum = "spec_vega.fits"
 
-    
+
     ##### READ IN FILTER INFORMATION
     filterdat = get_filterdat(filter, simdir)
     lambdamin = filterdat["lambdamin"]
@@ -120,37 +120,37 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     bw = filterdat["bw"]
     filterfile = os.path.expanduser(simdir + filterdat["filterfiles"][0])
     #print filterfile
-    
+
     #print lambdamin
     #print lambdamax
     #print lambdac
     #print bw
-    
-    #various scales of lambda/D radius according to scale 
+
+    #various scales of lambda/D radius according to scale
     if scale==0.004:
-	radiusl=1*lambdac[0]*206265/3.e11
+         radiusl=1*lambdac[0]*206265/3.e11
     elif scale==0.009 :
-        radiusl=1.5*lambdac[0]*206265/3.e11
+         radiusl=1.5*lambdac[0]*206265/3.e11
     elif scale==0.025 :
-        radiusl=20*lambdac[0]*206265/3.e11
+         radiusl=20*lambdac[0]*206265/3.e11
     else:
-        radiusl=40*lambdac[0]*206265/3.e11
+         radiusl=40*lambdac[0]*206265/3.e11
     sizel=2*radiusl
     radiusl /= scale
-    
-    ## Determine the length of the cube, dependent on filter 
+
+    ## Determine the length of the cube, dependent on filter
     ## (supporting only BB for now)
     dxspectrum = 0
     wi = lambdamin # Ang
     wf = lambdamax # Ang
-    #resolution = resolution*2.  
+    #resolution = resolution*2.
     dxspectrum = int(ceil( log10(wf/wi)/log10(1.0+1.0/(resolution*2.0)) ))
-    ## resolution times 2 to get nyquist sampled 
+    ## resolution times 2 to get nyquist sampled
     crval1 = wi/10.                      # nm
     cdelt1 = ((wf-wi) / dxspectrum)/10.  # nm/channel
     #print dxspectrum
-    # Throughput calculation    
-    if efftot is None: 
+    # Throughput calculation
+    if efftot is None:
 
         # Throughput number from Ryuji (is there wavelength dependence?)
         #teltot = 0.91 # TMT total throughput
@@ -159,11 +159,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         aotot = 0.80
 
         wav  = [830,900,2000,2200,2300,2412] # nm
-        
+
         if mode == "imager":
            tput = [0.631,0.772,0.772,0.813,0.763,0.728] # imager
            if verb > 1: print 'IRIS imager selected!!!'
-        
+
         else:
            if (scale == 0.004) or (scale == 0.009):
               tput = [0.340,0.420,0.420,0.490,0.440,0.400] # IFS lenslet
@@ -171,7 +171,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
            else:
               tput = [0.343,0.465,0.465,0.514,0.482,0.451] # IFS slicer
               if verb > 1: print 'IRIS slicer selected!!!'
-        
+
         #print tput
         w = (np.arange(dxspectrum)+1)*cdelt1 + crval1  # compute wavelength
         #print,lambda
@@ -182,7 +182,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         R = interpolate.interp1d(wav,tput)
         eff_lambda = [R(w) for w0 in w]
         #print eff_lambda
-        
+
         ###############################################################
         # MEAN OF THE INSTRUMENT THROUGHPUT BETWEEN THE FILTER BANDPASS
         ###############################################################
@@ -190,12 +190,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #efftot = instot
 
         efftot = instot*teltot*aotot
-    
+
     if verb > 1: print  ' '
     #print  'IRIS efficiency ', efftot
     if verb > 1: print  'Total throughput (TMT+NFIRAOS+IRIS) = %.3f' % efftot
-    
-    
+
+
     if bgmag:
        backmag = bgmag
     else:
@@ -210,15 +210,15 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #print lambdac
 
     if psf_old:
-    
+
          psf_dict = { 928:"psf_x0_y0_wvl928nm_implKOLMO117nm_bin4mas_sm.fits",
                      1092:"psf_x0_y0_wvl1092nm_implKOLMO117nm_bin4mas_sm.fits",
                      1270:"psf_x0_y0_wvl1270nm_implKOLMO117nm_bin4mas_sm.fits",
                      1629:"psf_x0_y0_wvl1629nm_implKOLMO117nm_bin4mas_sm.fits",
                      2182:"psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits"}
-         
+
          psf_wvls = psf_dict.keys()
-         
+
          psf_ind = np.argmin(np.abs(lambdac/10. - psf_wvls))
          psf_wvl =  psf_wvls[psf_ind]
          #psf_file = os.path.expanduser(simdir + "/psfs/" + psf_dict[psf_wvl])
@@ -228,7 +228,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
          #print psf_ind
          #print psf_wvl
          #print psf_file
-        
+
     else:
         if mode.lower() == "ifs":
             psf_wvls = [840, 928, 1026, 988, 1092, 1206, 1149, 1270, 1403, 1474,
@@ -245,7 +245,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         psf_file = os.path.expanduser(psfdir + "/psfs/" + psf_file)
 
         #print 'psf_file',psf_file
-        #print os.path.isfile(psf_file) 
+        #print os.path.isfile(psf_file)
 
         psf_ind = np.argmin(np.abs(lambdac/10. - psf_wvls))
         psf_wvl =  psf_wvls[psf_ind]
@@ -258,7 +258,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         # FITS header comments contain wavelength information
         # for i in xrange(len(pf)): print pf[i].header["COMMENT"]
 
-        # truncate PSF with iamge size goes down to 1e-6 
+        # truncate PSF with iamge size goes down to 1e-6
         # check in log scale
         # 350 - 1150
 
@@ -274,13 +274,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     psf_extend=np.array(image)
     #print 'imagemax',image.max()
     if source=='extended':
-	window=300
-	obj=np.ones([1500,1500])
-	centerx=psf_extend.shape[0]/2
+        window=300
+        obj=np.ones([1500,1500])
+        centerx=psf_extend.shape[0]/2
         centery=psf_extend.shape[1]/2
         psf_extend=psf_extend[centerx-(window/2):centerx+(window/2),centery-(window/2):centery+(window/2)]
-	image=fftconvolve(obj,psf_extend,mode='same')
-	
+        image=fftconvolve(obj,psf_extend,mode='same')
+
     # position of center of PSF
     x_im_size,y_im_size = image.shape
     hw_x = x_im_size/2
@@ -289,7 +289,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #print hw_x,hw_y
 
     #sys.exit()
-    
+
     #print image.sum()
     #image /= image.sum()
 
@@ -353,7 +353,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     flux_phot = zp*10**(-0.4*mag) # photons/s/m^2
     if source=='extended':
        flux_phot= zp*10**(-0.4*mag)*(scale**2)
-    
+
     #########################################################################
     #########################################################################
     # comparison:
@@ -395,30 +395,30 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     if verb > 1:
         # Vega test spectrum
         if spectrum == "vega_all.fits":
-            ext = 0 
+            ext = 0
             spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
             pf = fits.open(spec_file)
             spec = pf[ext].data
             head = pf[ext].header
             cdelt1 = head["cdelt1"]
             crval1 = head["crval1"]
-        
+
             nelem = spec.shape[0]
             specwave = (np.arange(nelem))*cdelt1 + crval1  # Angstrom
             #spec /= 206265.**2
 
         elif spectrum == "spec_vega.fits":
-            ext = 0 
+            ext = 0
             spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
             pf = fits.open(spec_file)
             specwave = pf[ext].data[0,:] # Angstrom
             spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
             nelem = spec.shape[0]
-            
+
         E_phot = (h*c)/(specwave*Ang) # erg
         #print specwave
         #print E_phot
- 
+
         fig = plt.figure()
         p = fig.add_subplot(111)
         p.plot(specwave, spec/E_phot) # photons/s/cm^2/Ang
@@ -464,7 +464,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
     #ymax,xmax = image.shape
     #print xmax,ymax
-    if mode.lower() == "ifs": 
+    if mode.lower() == "ifs":
         #hwbox = 25
         hwbox = 10
     elif mode == "imager":
@@ -476,7 +476,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 
     if verb > 1: print image.shape
-    if 0: 
+    if 0:
         # original code
         xc,yc = [hw_x,hw_y]
         xs = xc
@@ -488,8 +488,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         # center coordinates
         #xp,yp = positions
         xc,yc = positions
-       
-        # image coordinates 
+
+        # image coordinates
         xp = xc + hw_x
         yp = yc + hw_y
         # 239 x 239 is the shape of the PSF image
@@ -503,10 +503,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #print xp,yp
         #print xs,ys
 
-    
+
     # normalize by the full PSF image
     #subimage /= image.sum()
-    
+
 
 
     # to define apertures used throughout the calculations
@@ -544,9 +544,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ohspectrum = ohspec*scale**2.0  ## photons/um/s/m^2
         contspectrum = cospec*scale**2.0
         bbspectrum = bbspec*scale**2.0
-      
+
         backtot = ohspectrum + contspectrum + bbspectrum
-      
+
         if verb >1:
            print 'mean OH: ', np.mean(ohspectrum)
            print 'mean continuum: ', np.mean(contspectrum)
@@ -596,26 +596,26 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
         else:
             if spectrum == "vega_all.fits":
-                ext = 0 
+                ext = 0
                 spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
                 pf = fits.open(spec_file)
                 spec = pf[ext].data
                 head = pf[ext].header
                 cdelt1 = head["cdelt1"]
                 crval1 = head["crval1"]
-            
+
                 nelem = spec.shape[0]
                 specwave = (np.arange(nelem))*cdelt1 + crval1  # Angstrom
                 specwave /= 1e4 # -> microns
 
             elif spectrum == "spec_vega.fits":
-                ext = 0 
+                ext = 0
                 spec_file = os.path.expanduser(simdir + "/model_spectra/" + spectrum)
                 pf = fits.open(spec_file)
                 specwave = pf[ext].data[0,:] # Angstrom
                 spec = pf[ext].data[1,:]     # erg/s/cm^2/Ang
                 nelem = spec.shape[0]
-                
+
                 E_phot = (h*c)/(specwave*Ang) # erg
                 spec *= 100*100*1e4/E_phot # -> photons/s/m^2/um
                 specwave /= 1e4 # -> microns
@@ -643,13 +643,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             delt = 2.0*(wave[1]-wave[0])/(specwave[1]-specwave[0])
             #delt = 0
             if delt > 1:
-            
+
                stddev = delt/2*sqrt(2*log(2))
                psf_func = models.Gaussian1D(amplitude=1.0, stddev=stddev)
                x = np.arange(4*int(delt)+1)-2*int(delt)
                psf = psf_func(x)
                psf /= psf.sum() # normalize
-            
+
                spec = np.convolve(spec, psf,mode='same')
 
             spec_func = interpolate.interp1d(specwave,spec)
@@ -686,7 +686,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             hdu = fits.PrimaryHDU(cube)
             hdul = fits.HDUList([hdu])
             hdul.writeto('cube.fits',clobber=True)
-      
+
 
         # convert the signal and the background into photons/s observed
         # with TMT
@@ -731,14 +731,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             p.plot(wave, np.sum(cube,axis=(1,2)),c="b")
             plt.show()
 
-        if verb > 1: 
+        if verb > 1:
             print 'n wavelength channels: ', len(wave)
             print 'channel width (micron): ', wave[1]-wave[0]
             print 'mean flux input cube center (phot/s/m^2/micron): %.2e' % np.mean(cube[:, ys, xs])
             print 'mean counts/spectral channel input cube center (phot/s): %.2e' % np.mean(observedCube[:, ys, xs])
             print 'mean background (phot/s): ', np.mean(backtot)
         #print "CORRECT ABOVE"
-        
+
         backgroundCube = np.broadcast_to(backtot[:,np.newaxis,np.newaxis],cube.shape)
         #print backgroundCube
         if verb > 1: print backgroundCube.shape
@@ -748,10 +748,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ### Calculate total noise number of photons from detector
         #darknoise = (sqrt(darkcurrent*itime)) * (1/sqrt(coadds))
         #readnoise = sqrt(coadds)*readnoise
-        #darknoise = (sqrt(darkcurrent*itime)) 
+        #darknoise = (sqrt(darkcurrent*itime))
         darknoise = darkcurrent       ## electrons/s
         readnoise = readnoise**2.0/itime  ## scale read noise
-        
+
                                         # total noise per pixel
         # noisetot = sqrt((readnoise*readnoise) + (darknoise*darknoise))
         noisetot = darknoise + readnoise
@@ -765,13 +765,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         ####################################################
         if calc == "snr":
             if verb > 1: print "Case 1: find S/N for a given exposure time and mag"
-        
+
             signal = observedCube*np.sqrt(itime*nframes)  # photons/s
             # make a background cube and add noise
             # noise = sqrt(S + B + R^2/t)
             #noiseCube = np.sqrt(observedCube+backgroundCube+darkcurrent+readnoise**2.0/itime)
             noiseCube = np.sqrt(observedCube+noisetotal)
-            
+
             # SNR cube  = S*sqrt(itime*nframes)/sqrt(S + B+ R^2/t)
             ##snrCube = observedCube*nframes*itime/rmsNoiseCube
             #snrCube = observedCube*sqrt(itime*nframes)/noiseCube
@@ -784,37 +784,37 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 hdul.writeto('snrCube.fits',clobber=True)
 
 
-	    flatarray=np.ones(snrCube[0,:,:].shape)
-	    maskimg= mask.multiply(flatarray)
+            flatarray=np.ones(snrCube[0,:,:].shape)
+            maskimg= mask.multiply(flatarray)
             masklimg= maskl.multiply(flatarray)
-	    
-	    
+
+
             data_cutout = []
             data_cutout_aper = []
-	    data_cutout_aperselect = []
+            data_cutout_aperselect = []
             data_cutoutl = []
             data_cutout_aperl = []
-	    data_cutout_aperlselect = []	    
-            for n in xrange(dxspectrum): 
+            data_cutout_aperlselect = []
+            for n in xrange(dxspectrum):
                 data_cutout.append(mask.cutout(snrCube[n,:,:]))
                 if photutils.__version__ == "0.4":
                     data_cutout_tmp = mask.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
                 else:
                     data_cutout_tmp = mask.apply(snrCube[n,:,:])
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
                 data_cutout_aper.append(data_cutout_tmp)
-		data_cutout_aperselect.append(data_cutout_tmp_select)
-            for n in xrange(dxspectrum): 
+                data_cutout_aperselect.append(data_cutout_tmp_select)
+            for n in xrange(dxspectrum):
                 data_cutoutl.append(maskl.cutout(snrCube[n,:,:]))
                 if photutils.__version__ == "0.4":
                     data_cutout_tmp = maskl.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
                 else:
                     data_cutout_tmp = maskl.apply(snrCube[n,:,:])
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
                 data_cutout_aperl.append(data_cutout_tmp)
-		data_cutout_aperlselect.append(data_cutout_tmp_select)
+                data_cutout_aperlselect.append(data_cutout_tmp_select)
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
                 #    p = fig.add_subplot(111)
@@ -824,21 +824,21 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout = np.array(data_cutout)
             data_cutout_aper = np.array(data_cutout_aper)
             data_cutoutl = np.array(data_cutoutl)
-            data_cutout_aperl = np.array(data_cutout_aperl)	
-	    data_cutout_aperselect = np.array(data_cutout_aperselect)
-	    data_cutout_aperlselect = np.array(data_cutout_aperlselect)    
+            data_cutout_aperl = np.array(data_cutout_aperl)
+            data_cutout_aperselect = np.array(data_cutout_aperselect)
+            data_cutout_aperlselect = np.array(data_cutout_aperlselect)
             if verb > 1: print data_cutout.shape
             if verb > 1: print data_cutout_aper.shape
-	    peakSNR=""
-	    medianSNR=""
-	    meanSNR=""
-	    medianSNRl=""
-	    meanSNRl=""	    
-	    minexptime=""
-	    medianexptime=""
-	    meanexptime=""
-	    medianexptimel=""
-	    meanexptimel=""	    	
+            peakSNR=""
+            medianSNR=""
+            meanSNR=""
+            medianSNRl=""
+            meanSNRl=""
+            minexptime=""
+            medianexptime=""
+            meanexptime=""
+            medianexptimel=""
+            meanexptimel=""
             ###############
             # Main S/N plot
             ###############
@@ -848,7 +848,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 #p.plot(wave, filter_tput*cube[:,ys,xs])
                 p.plot(wave, snrCube[:,ys,xs],c="k",label="Peak Flux")
                 #p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]')
-		#p.plot(wave, np.mean(data_cutout_aperselect,axis=1),label='Mean Flux [Aperture : 0.2"]')
+                #p.plot(wave, np.mean(data_cutout_aperselect,axis=1),label='Mean Flux [Aperture : 0.2"]')
                 #p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label='Median Flux [Aperture : 0.2"]')
                 p.plot(wave, np.mean(data_cutout_aperlselect,axis=1),label="Mean Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
                 p.plot(wave, np.median(data_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
@@ -859,10 +859,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                     fig.savefig(png_output)
                 else:
                     plt.show()
-            
+
             #print data_cutout.shape
             #print data_cutout_aper.shape
-            
+
             #;; save the SNR cube if given
             #if n_elements(outcube) ne 0 then begin
             #   mkosiriscube, wave, transpose(snrCube, [2, 1, 0]), outcube, /micron, scale = scale, units = 'SNR', params = fitsParams, values = fitsValues
@@ -871,12 +871,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             ## total noise in photons
             ## rmsNoiseCube = sqrt(observedCube*itime*nframes + noiseCube*itime*nframes + darkcurrent*itime*nframes + readnoise^2.0*nframes)
-            
-            ### original code from Tuan, probably not correct 
+
+            ### original code from Tuan, probably not correct
             #rmsNoiseCube = (observedCube*itime*nframes + backgroundCube*itime*nframes + darkcurrent*itime*nframes + readnoise**2.0*nframes)
             #simNoiseCube = np.random.poisson(lam=rmsNoiseCube, size=rmsNoiseCube.shape).astype("float64")
             #totalObservedCube = observedCube*nframes*itime + simNoiseCube
-            
+
             #for ii = 0, s[3] - 1 do begin
             #   for jj = 0, s[2]-1 do begin
             #      for kk = 0, s[1]-1 do begin
@@ -884,7 +884,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #      endfor
             #   endfor
             #endfor
-            
+
             totalObservedCube = observedCube*itime*nframes + backgroundCube*itime*nframes + darkcurrent*itime*nframes + readnoise**2.0*nframes
             # model + background + noise
             # [electrons]
@@ -892,86 +892,86 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             # divide back by total integration time to get the simulated image
             simCube = simCube_tot/(itime*nframes) # [electrons/s]
             simCube_DN = simCube_tot/gain # [DNs]
-            
+
             if verb > 2:
                 # [electrons]
                 hdu = fits.PrimaryHDU(simCube_tot)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('simCube_tot.fits',clobber=True)
-            
+
                 # [electrons/s]
                 hdu = fits.PrimaryHDU(simCube)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('simCube.fits',clobber=True)
-            
+
                 # [DNs]
                 hdu = fits.PrimaryHDU(simCube_DN)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('simCube_DN.fits',clobber=True)
-            
-            
+
+
             #totalObservedCube = float(totalObservedCube)
             #;; save the file
             #if not(keyword_set(quiet)) then begin
             #   print, '% IRIS_SIM_SNR: '
             #   print, 'saving simulated observed cube: ', simcube
             #endif
-            
+
             #mkosiriscube, wave, transpose(totalObservedCube, [2, 1, 0]), simcube, /micron, scale = scale, units = 'phot', params = fitsParams, values = fitsValues
-            
+
             #if n_elements(savesky) ne 0  then begin
             #   mkosiriscube, wave, transpose(simNoiseCube, [2, 1, 0]), savesky, /micron, scale = scale, units = 'phot', params = fitsParams, values = fitsValues
             #endif
 
-            
+
         #######################################################
         # Case 2: find integration time for a given s/n and mag
         #######################################################
         elif calc == "exptime":
             if verb > 1: print "Case 2: find integration time for a given S/N and mag"
-            
+
             # snr = observedCube*np.sqrt(itime*nframes)/np.sqrt(observedCube+noisetotal)
             # itime * nframes =  (snr * np.sqrt(observedCube+noisetotal)/observedCube)**2
-            
+
             totime =  (snr * np.sqrt(observedCube+noisetotal)/observedCube)**2
             # totime = itime * nframes
 
 
-	    flatarray=np.ones(totime[0,:,:].shape)
-	    maskimg= mask.multiply(flatarray)
+            flatarray=np.ones(totime[0,:,:].shape)
+            maskimg= mask.multiply(flatarray)
             masklimg= maskl.multiply(flatarray)
 
-            
+
             data_cutout = []
             data_cutout_aper = []
-	    data_cutout_aperselect = []
+            data_cutout_aperselect = []
             data_cutoutl = []
             data_cutout_aperl = []
-	    data_cutout_aperlselect = []	
-	    
-	        
-            for n in xrange(dxspectrum): 
+            data_cutout_aperlselect = []
+
+
+            for n in xrange(dxspectrum):
                 data_cutout.append(mask.cutout(totime[n,:,:]))
 
                 if photutils.__version__ == "0.4":
                     data_cutout_tmp = mask.multiply(totime[n,:,:]) # in version 0.4 of photutils
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
                 else:
                     data_cutout_tmp = mask.apply(totime[n,:,:])
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
                 data_cutout_aper.append(data_cutout_tmp)
-		data_cutout_aperselect.append(data_cutout_tmp_select)
-            for n in xrange(dxspectrum): 
+                data_cutout_aperselect.append(data_cutout_tmp_select)
+            for n in xrange(dxspectrum):
                 data_cutoutl.append(maskl.cutout(totime[n,:,:]))
 
                 if photutils.__version__ == "0.4":
                     data_cutout_tmp = maskl.multiply(totime[n,:,:]) # in version 0.4 of photutils
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
                 else:
                     data_cutout_tmp = maskl.apply(totime[n,:,:])
-		    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
+                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
                 data_cutout_aperl.append(data_cutout_tmp)
-		data_cutout_aperlselect.append(data_cutout_tmp_select)
+                data_cutout_aperlselect.append(data_cutout_tmp_select)
 
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
@@ -982,21 +982,21 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             data_cutout = np.array(data_cutout)
             data_cutout_aper = np.array(data_cutout_aper)
             data_cutoutl = np.array(data_cutoutl)
-            data_cutout_aperl = np.array(data_cutout_aperl)	    
-	    data_cutout_aperselect = np.array(data_cutout_aperselect)
-	    data_cutout_aperlselect = np.array(data_cutout_aperlselect)   	    
+            data_cutout_aperl = np.array(data_cutout_aperl)
+            data_cutout_aperselect = np.array(data_cutout_aperselect)
+            data_cutout_aperlselect = np.array(data_cutout_aperlselect)
             #print data_cutout.shape
             #print data_cutout_aper.shape
-	    peakSNR=""
+            peakSNR=""
             medianSNR=""
             meanSNR=""
             medianSNRl=""
-            meanSNRl=""	    
-	    minexptime=""
-	    medianexptime=""
-	    meanexptime=""
-	    medianexptimel=""
-	    meanexptimel=""	    	
+            meanSNRl=""
+            minexptime=""
+            medianexptime=""
+            meanexptime=""
+            medianexptimel=""
+            meanexptimel=""
             ####################
             # Main exposure plot
             ####################
@@ -1007,7 +1007,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 #p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]' )
                 #p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label='Median Flux  [Aperture : 0.2"]')
                 p.plot(wave, np.mean(data_cutout_aperlselect,axis=1),label="Mean Flux  [Aperture : "+"{:.3f}".format(sizel)+'"]')
-                p.plot(wave, np.median(data_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
+                p.plot(wave, np.median(data_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("Total Integration time (seconds)")
                 leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
@@ -1031,12 +1031,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(totime)
                 plt.show()
 
-            # exposure time for aperture 
+            # exposure time for aperture
             data_cutout = []
             data_cutout_aper = []
             noise_cutout = []
             noise_cutout_aper = []
-            for n in xrange(dxspectrum): 
+            for n in xrange(dxspectrum):
                 data_cutout.append(mask.cutout(observedCube[n,:,:]))
 
                 if photutils.__version__ == "0.4":
@@ -1064,32 +1064,32 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     ###########################################################################
     else:
 
-        # Scale by the zeropoint flux 
+        # Scale by the zeropoint flux
         subimage *= flux_phot
-    
+
         ############################# NOISE ####################################
         # Calculate total background number of photons for whole tel aperture
-        #efftot = effao*efftel*effiris #total efficiency 
+        #efftot = effao*efftel*effiris #total efficiency
         if verb > 1: print 'background magnitude: ', backmag
         phots_m2 = (10**(-0.4*backmag)) * zp # phots per sec per m2
         #print phots_m2
         # divide by the number of spectral channels if it's not an image
         phots_tel = phots_m2 * collarea     # phots per sec for TMT
         #phots_int = phots_tel               # phots per sec
-        #phots_chan = phots_int 
+        #phots_chan = phots_int
         # phots from background per square arcsecond through the telescope
         phots_back = efftot*phots_tel
         #background = sqrt(phots_back*scale*scale) #photons from background per spaxial^2
         background = phots_back*scale*scale #photons from background per spaxial^2
-        
+
         ###################################################################################################
         ### Calculate total noise number of photons from detector
         #darknoise = (sqrt(darkcurrent*itime)) * (1/sqrt(coadds))
         #readnoise = sqrt(coadds)*readnoise
-        #darknoise = (sqrt(darkcurrent*itime)) 
+        #darknoise = (sqrt(darkcurrent*itime))
         darknoise = darkcurrent       ## electrons/s
         readnoise = readnoise**2.0/itime  ## scale read noise
-        
+
                                         # total noise per pixel
         # noisetot = sqrt((readnoise*readnoise) + (darknoise*darknoise))
         noisetot = darknoise + readnoise
@@ -1102,7 +1102,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         if verb > 1: print '  '
         if verb > 1: print 'Total Noise (photons per pixel^2)= ', noisetotal
         ###################################################################################################
-        
+
         ## put in the TMT collecting area and efficiency
         tmtImage = subimage*collarea*efftot
         #print 'Object Mag:', mag, 'Object Flux scaled', flux_phot,'Object Flux collarea*efftot', flux_phot*efftot*collarea,tmtImage.max()
@@ -1110,7 +1110,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         if verb > 1: print
         if verb > 1: print
         if verb > 1: print
-   
+
 
 
         ####################################################
@@ -1119,21 +1119,21 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         if calc == "snr":
 
             if verb > 1: print "Case 1: find S/N for a given exposure time and mag"
-        
+
             signal = tmtImage*np.sqrt(itime*nframes)  # photons/s
             noisemap = np.sqrt(tmtImage+noisetotal)
-            
+
             snrMap = signal/noisemap
             #print np.max(snrMap)
             #print np.mean(snrMap)
-            
+
             if verb > 1:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
                 #p.hist(snrMap)
-            
+
                 X = snrMap.flatten()
-                x0 = np.min(X) 
+                x0 = np.min(X)
                 x1 = np.max(X)
                 bins = 50
                 n,bins,patches = p.hist(X,bins,range=(x0,x1),histtype='stepfilled',
@@ -1150,99 +1150,99 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p = fig.add_subplot(111)
                 p.imshow(snrMap,interpolation='none')
                 plt.show()
-            
+
             if verb > 2:
                 hdu = fits.PrimaryHDU(snrMap)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('snrImage.fits',clobber=True)
-            
+
             # model + background
             totalObserved = tmtImage*itime*nframes + background*itime*nframes + darkcurrent*itime*nframes + readnoise*itime*nframes
             #print totalObserved.shape
             #print totalObserved.dtype
-            
+
             if verb > 2:
                 hdu = fits.PrimaryHDU(totalObserved)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('new2.fits',clobber=True)
-            
+
             # model + background + noise
             # [electrons]
             simImage_tot = np.random.poisson(lam=totalObserved, size=totalObserved.shape).astype("float64")
             #print simImage_tot.dtype
-            
+
             # divide back by total integration time to get the simulated image
             simImage = simImage_tot/(itime*nframes) # [electrons/s]
             simImage_DN = simImage_tot/gain # [DNs]
-            
+
             if verb > 2:
                 # [electrons]
                 hdu = fits.PrimaryHDU(simImage_tot)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('simImage_tot.fits',clobber=True)
-            
+
                 # [electrons/s]
                 hdu = fits.PrimaryHDU(simImage)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('simImage.fits',clobber=True)
-            
+
                 # [DNs]
                 hdu = fits.PrimaryHDU(simImage_DN)
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('simImage_DN.fits',clobber=True)
-            
+
             # Sky background counts
             #bkg_func = Background2D(simImage_DN,simImage_DN.shape)     # constant
             #print bkg_func.background
             #print bkg_func.background_median
             #print bkg_func.background_rms_median
-            
+
             #image = mask.to_image(shape=((200, 200)))
             data_cutout = mask.cutout(snrMap)
-	    data_cutoutl = maskl.cutout(snrMap)
+            data_cutoutl = maskl.cutout(snrMap)
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(snrMap) # in version 0.4 of photutils
-		data_cutout_aperl = maskl.multiply(snrMap) # in version 0.4 of photutils
+                data_cutout_aperl = maskl.multiply(snrMap) # in version 0.4 of photutils
             else:
                 data_cutout_aper = mask.apply(snrMap)
-                data_cutout_aperl = maskl.apply(snrMap)	
-		
-	    flatarray=np.ones(snrMap.shape)
+                data_cutout_aperl = maskl.apply(snrMap)
+
+            flatarray=np.ones(snrMap.shape)
             maskimg= mask.multiply(flatarray)
             masklimg= maskl.multiply(flatarray)
 
             peakSNR=str("%0.4f" %np.max(snrMap))
-	    medianSNR=str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
-	    meanSNR=str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
-	    medianSNRl=str("%0.4f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
-	    meanSNRl=str("%0.4f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))
-	    minexptime=""
-	    medianexptime=""
-	    meanexptime=""
-	    medianexptimel=""
-	    meanexptimel=""	    
+            medianSNR=str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
+            meanSNR=str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
+            medianSNRl=str("%0.4f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
+            meanSNRl=str("%0.4f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))
+            minexptime=""
+            medianexptime=""
+            meanexptime=""
+            medianexptimel=""
+            meanexptimel=""
             #print np.min(snrMap)
             if verb > 1: print "Peak S/N = %.4f" % np.max(snrMap)
             if verb > 1: print "Median S/N = %.4f" % np.median(data_cutout_aper)
             if verb > 1: print "Mean S/N = %.4f" % np.mean(data_cutout_aper)
-            
+
             if verb > 1:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
                 p.imshow(data_cutout_aper,interpolation='none')
                 plt.show()
-            
+
             phot_table = aperture_photometry(signal, aperture, error=noisemap)
             #print phot_table
             snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
             if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (2*radius*scale, snr_int[0])
-            
+
             if verb > 1:
                 phot_table = aperture_photometry(signal, apertures, error=noisemap)
                 dn     = np.array([phot_table["aperture_sum_%i" % i] for i in range(len(radii))])
                 dn_err = np.array([phot_table["aperture_sum_err_%i" % i] for i in range(len(radii))])
                 #print phot_table
-           
+
                 fig = plt.figure()
                 p = fig.add_subplot(111)
                 p.errorbar(radii,dn,yerr=dn_err)
@@ -1250,57 +1250,57 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.set_xlabel("Aperture radius [pixels]")
                 p.set_ylabel("Counts [photons/s/aperture]")
                 plt.show()
-            
+
             #simImage = dblarr(s[1], s[2])
             #for i = 0, s[1]-1 do begin
             #   for j = 0, s[2]-1 do begin
             #      simImage[i, j] = randomn(seed, poisson = totalObserved[i, j], /double)
             #   endfor
             #endfor
-            
+
             if verb > 1: print
             if verb > 1: print
             if verb > 1: print
-    
+
         #######################################################
         # Case 2: find integration time for a given s/n and mag
         #######################################################
         elif calc == "exptime":
 
             if verb > 1: print "Case 2: find integration time for a given S/N and mag"
-            
+
             # snr = tmtImage*np.sqrt(itime*nframes)/np.sqrt(tmtImage+noisetotal)
             # itime * nframes =  (snr * np.sqrt(tmtImage+noisetotal)/tmtImage)**2
-            
+
             totime =  (snr * np.sqrt(tmtImage+noisetotal)/tmtImage)**2
             # totime = itime * nframes
-            
+
 
             #print totime
             #print np.max(totime)
             data_cutout = mask.cutout(totime)
-            data_cutoutl = maskl.cutout(totime)	    
+            data_cutoutl = maskl.cutout(totime)
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(totime) # in version 0.4 of photutils
-                data_cutout_aperl = maskl.multiply(totime) # in version 0.4 of photutils		
+                data_cutout_aperl = maskl.multiply(totime) # in version 0.4 of photutils
             else:
                 data_cutout_aper = mask.apply(totime)
-                data_cutout_aperl = maskl.apply(totime)	
-		
-			
-	    flatarray=np.ones(totime.shape)
+                data_cutout_aperl = maskl.apply(totime)
+
+
+            flatarray=np.ones(totime.shape)
             maskimg= mask.multiply(flatarray)
-            masklimg= maskl.multiply(flatarray)	
+            masklimg= maskl.multiply(flatarray)
             minexptime= str("%0.4f" %np.min(totime))
-	    medianexptime= str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
-	    meanexptime=  str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
-	    medianexptimel= str("%0.4f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
-	    meanexptimel=  str("%0.4f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))	    
-	    peakSNR=""
-	    medianSNR=""
-	    meanSNR=""  
-	    medianSNRl=""
-	    meanSNRl="" 	                  
+            medianexptime= str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
+            meanexptime=  str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
+            medianexptimel= str("%0.4f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
+            meanexptimel=  str("%0.4f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))
+            peakSNR=""
+            medianSNR=""
+            meanSNR=""
+            medianSNRl=""
+            meanSNRl=""
             if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
             if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
             if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
@@ -1311,8 +1311,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(totime)
                 plt.show()
 
-  
-            # exposure time for aperture 
+
+            # exposure time for aperture
             data_cutout = mask.cutout(tmtImage)
             #data_cutout_aper = mask.apply(tmtImage)
             if photutils.__version__ == "0.4":
@@ -1322,42 +1322,42 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             aper_sum = data_cutout_aper.sum()
             totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
-            
+
     #jsondict={'Magnitude of Source (Vega)':mag,'Peak Value of SNR':peakSNR,'Median Value of SNR (Aperture =0.4")':medianSNR,'Mean Value of SNR (Aperture =0.4")':meanSNR,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':medianSNRl,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':meanSNRl,'Exposure time (Minimum) ':minexptime,'Median Value of Exposure time (Aperture =0.4\")':medianexptime,'Mean Value of Exposure time (Aperture =0.4")':meanexptime,'Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':medianexptimel,'Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':meanexptimel,"Flux density of Source":str("%0.4e" %flambda[0])}
     if calc == "exptime":
-	inputstr='Input SNR'
-	inputvalue=str(snr)
+        inputstr='Input SNR'
+        inputvalue=str(snr)
     else:
-	inputstr= 'Input integration time [s]' 
-	inputvalue=str(nframes*itime)
+        inputstr= 'Input integration time [s]'
+        inputvalue=str(nframes*itime)
     if source == "extended":
-	magadd='[per square arcsecond]'
+        magadd='[per square arcsecond]'
     else:
-	magadd=''			
+        magadd=''
     jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.2")',medianSNR),('Mean Value of SNR (Aperture =0.2")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel)])
 
-    print(json.dumps(jsondict))  
-        
+    print(json.dumps(jsondict))
+
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
         #tmtImage_sum = tmtImage_aper["aperture_sum"]
         #tmtImage_err = tmtImage_aper["aperture_err"]
         #print tmtImage_aper
-        
+
         #totime =  (snr * np.sqrt(tmtImage_sum+noisetotal)/tmtImage_sum)**2
         #print totime
-        
+
         #bkg_totalObserved_func = Background2D(totalObserved,totalObserved.shape)     # constant
         #bkg_totalObserved = bkg_totalObserved_func.background
-        
+
         #totalObserved_aper = aperture_photometry(totalObserved-bkg_totalObserved, aperture)
         #totalObserved_sum = totalObserved_aper["aperture_sum"]
         #totalObserved_err = totalObserved_aper["aperture_err"]
         #print totalObserved_aper
-        
-        
+
+
         #bkg_simImage_func = Background2D(simImage,simImage.shape)     # constant
         #bkg_simImage = bkg_simImage_func.background
-        
+
         #simImage_aper = aperture_photometry(simImage-bkg_simImage, aperture)
         #simImage_sum = simImage_aper["aperture_sum"]
         #simImage_err = simImage_aper["aperture_err"]
@@ -1367,7 +1367,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 # ~/python.linux/dev/iris/snr/iris_snr_sim.py
 # ~/python.linux/packages/IRIS_snr_sim/iris_snr_sim.py
 
-    
+
 # Usage:
 #  Imager mode
 #    iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode imager -calc snr -nframes 2
@@ -1422,7 +1422,7 @@ parser.add_argument('-mode', choices=['imager','IFS'], required=True,
 parser.add_argument('-source', metavar='value', type=str, nargs='?',
                     default="point_source", help='[point_source, extended]')
 parser.add_argument('-source_size', metavar='value', type=float, nargs='?',
-                    default="0.2", help='size of extended object in arcsecond')                   
+                    default="0.2", help='size of extended object in arcsecond')
 parser.add_argument('-zenith-angle', type=float, metavar='value', nargs='?',
                     default=30., help='zenith angle of simulated PSF [degrees]')
 parser.add_argument('-atm-cond', type=float, metavar='value', nargs='?',
@@ -1478,7 +1478,7 @@ wavelength = args.wavelength
 line_width = args.line_width
 
 
-zenith_angle = args.zenith_angle  
+zenith_angle = args.zenith_angle
 atm_cond = args.atm_cond
 psf_loc = args.psf_loc
 
@@ -1506,7 +1506,7 @@ png_output = args.o
 
 IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
          flambda=flambda, resolution=resolution, filter=filter, scale=scale,
-         simdir=simdir, spectrum=spectrum, lam_obs = wavelength, 
+         simdir=simdir, spectrum=spectrum, lam_obs = wavelength,
          line_width = line_width, zenith_angle=zenith_angle, atm_cond=atm_cond,
          psf_loc=psf_loc, png_output=png_output, psfdir=psfdir, source=source,source_size=source_size,
          psf_old=psf_old, verb=1)
@@ -1516,15 +1516,15 @@ IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
 
 
 
-    
-# Test 1    
+
+# Test 1
 #IRIS_ETC(mode="imager",calc="snr")
-# Test 2    
+# Test 2
 #IRIS_ETC(mode="imager",calc="itime")
 #IRIS_ETC(mode="ifs",calc="snr", verb=2, mag=10)
 #IRIS_ETC(mode="ifs",calc="snr", verb=2, mag=10, spectrum="Flat")
 #IRIS_ETC(mode="ifs",calc="itime")
-    
-    
-    
-    
+
+
+
+
