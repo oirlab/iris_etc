@@ -783,62 +783,112 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 hdul = fits.HDUList([hdu])
                 hdul.writeto('snrCube.fits',clobber=True)
 
+	    peakSNR=""
+	    medianSNR=""
+	    meanSNR=""
+	    medianSNRl=""
+	    meanSNRl=""	    
+	    minexptime=""
+	    medianexptime=""
+	    meanexptime=""
+	    medianexptimel=""
+	    meanexptimel=""	    	
+
+	    totalSNRl = ""	                                    # integrated aperture SNR at pre-defined fixed aperture
+	    totalexptimel = ""	                                    # integrated aperture exptime at pre-defined fixed aperture
 
             flatarray=np.ones(snrCube[0,:,:].shape)
-            maskimg= mask.multiply(flatarray)
-            masklimg= maskl.multiply(flatarray)
+            if photutils.__version__ == "0.4":
+                maskimg= mask.multiply(flatarray)
+                masklimg= maskl.multiply(flatarray)
+            else:
+                maskimg= mask.apply(flatarray)
+                masklimg= maskl.apply(flatarray)
 
 
-            data_cutout = []
-            data_cutout_aper = []
-            data_cutout_aperselect = []
-            data_cutoutl = []
-            data_cutout_aperl = []
-            data_cutout_aperlselect = []
+            snr_cutout = []
+            snr_cutout_aper = []
+            snr_cutout_aperselect = []
+            snr_cutoutl = []
+            snr_cutout_aperl = []
+            snr_cutout_aperlselect = []
             for n in xrange(dxspectrum):
-                data_cutout.append(mask.cutout(snrCube[n,:,:]))
+                snr_cutout.append(mask.cutout(snrCube[n,:,:]))
                 if photutils.__version__ == "0.4":
-                    data_cutout_tmp = mask.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
+                    snr_cutout_tmp = mask.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
+                    snr_cutout_tmp_select=snr_cutout_tmp[np.where(maskimg>0)]
                 else:
-                    data_cutout_tmp = mask.apply(snrCube[n,:,:])
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
-                data_cutout_aper.append(data_cutout_tmp)
-                data_cutout_aperselect.append(data_cutout_tmp_select)
+                    snr_cutout_tmp = mask.apply(snrCube[n,:,:])
+                    snr_cutout_tmp_select=snr_cutout_tmp[np.where(maskimg>0)]
+                snr_cutout_aper.append(snr_cutout_tmp)
+                snr_cutout_aperselect.append(snr_cutout_tmp_select)
             for n in xrange(dxspectrum):
-                data_cutoutl.append(maskl.cutout(snrCube[n,:,:]))
+                snr_cutoutl.append(maskl.cutout(snrCube[n,:,:]))
                 if photutils.__version__ == "0.4":
-                    data_cutout_tmp = maskl.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
+                    snr_cutout_tmp = maskl.multiply(snrCube[n,:,:]) # in version 0.4 of photutils
+                    snr_cutout_tmp_select=snr_cutout_tmp[np.where(masklimg>0)]
                 else:
-                    data_cutout_tmp = maskl.apply(snrCube[n,:,:])
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
-                data_cutout_aperl.append(data_cutout_tmp)
-                data_cutout_aperlselect.append(data_cutout_tmp_select)
+                    snr_cutout_tmp = maskl.apply(snrCube[n,:,:])
+                    snr_cutout_tmp_select=snr_cutout_tmp[np.where(masklimg>0)]
+
+                snr_cutout_aperl.append(snr_cutout_tmp)
+                snr_cutout_aperlselect.append(snr_cutout_tmp_select)
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
                 #    p = fig.add_subplot(111)
                 #    p.imshow(snrCube[n,:,:],interpolation='none')
                 #    plt.show()
 
-            data_cutout = np.array(data_cutout)
-            data_cutout_aper = np.array(data_cutout_aper)
-            data_cutoutl = np.array(data_cutoutl)
+            snr_cutout = np.array(snr_cutout)
+            snr_cutout_aper = np.array(snr_cutout_aper)
+            snr_cutoutl = np.array(snr_cutoutl)
+            snr_cutout_aperl = np.array(snr_cutout_aperl)
+            snr_cutout_aperselect = np.array(snr_cutout_aperselect)
+            snr_cutout_aperlselect = np.array(snr_cutout_aperlselect)
+
+            if verb > 1: print snr_cutout.shape
+            if verb > 1: print snr_cutout_aper.shape
+
+            ###########################
+            # summation of the aperture
+            ###########################
+            data_cutout_aperl = []
+            noise_cutout_aperl = []
+            for n in xrange(dxspectrum): 
+
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = maskl.multiply(signal[n,:,:]) # in version 0.4 of photutils
+                    noise_cutout_tmp = maskl.multiply(noiseCube[n,:,:])
+                else:
+                    data_cutout_tmp = maskl.apply(signal[n,:,:])
+                    noise_cutout_tmp = maskl.apply(noiseCube[n,:,:])
+
+                data_cutout_aperl.append(data_cutout_tmp)
+                noise_cutout_aperl.append(noise_cutout_tmp)
+
             data_cutout_aperl = np.array(data_cutout_aperl)
-            data_cutout_aperselect = np.array(data_cutout_aperselect)
-            data_cutout_aperlselect = np.array(data_cutout_aperlselect)
-            if verb > 1: print data_cutout.shape
-            if verb > 1: print data_cutout_aper.shape
-            peakSNR=""
-            medianSNR=""
-            meanSNR=""
-            medianSNRl=""
-            meanSNRl=""
-            minexptime=""
-            medianexptime=""
-            meanexptime=""
-            medianexptimel=""
-            meanexptimel=""
+            noise_cutout_aperl = np.array(noise_cutout_aperl)
+
+            ###########################
+            # summation of the aperture
+            ###########################
+            #aper_suml = data_cutout_aperl.sum()
+            #noise_suml = np.sqrt((noise_cutout_aperl**2).sum())
+
+            aper_sum_chl = np.sum(data_cutout_aperl,axis=(1,2))  # per channel
+            noise_sum_chl = np.sqrt(np.sum(noise_cutout_aperl**2,axis=(1,2)))  # per channel
+
+            snr_chl =  aper_sum_chl/noise_sum_chl
+
+            aper_suml = aper_sum_chl.sum()
+            noise_suml = np.sqrt((noise_sum_chl**2).sum())
+
+            snr_int =  aper_suml/noise_suml
+
+            if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (sizel, snr_int)
+
+	    totalSNRl = str("%0.4f" % snr_int)	                    # integrated aperture SNR at pre-defined fixed aperture
+
             ###############
             # Main S/N plot
             ###############
@@ -846,15 +896,27 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 fig = plt.figure()
                 p = fig.add_subplot(111)
                 #p.plot(wave, filter_tput*cube[:,ys,xs])
-                p.plot(wave, snrCube[:,ys,xs],c="k",label="Peak Flux")
-                #p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]')
-                #p.plot(wave, np.mean(data_cutout_aperselect,axis=1),label='Mean Flux [Aperture : 0.2"]')
-                #p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label='Median Flux [Aperture : 0.2"]')
-                p.plot(wave, np.mean(data_cutout_aperlselect,axis=1),label="Mean Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
-                p.plot(wave, np.median(data_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
+                l1, = p.plot(wave, snr_chl, c="k", label="Total Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
+
+                ############
+                # inset plot
+                ############
+                #p2 = plt.axes([0.2, 0.6, 0.25, 0.25])
+                p2 = plt.axes([0.625, 0.55, 0.25, 0.25])
+                l2, = p2.plot(wave, snrCube[:,ys,xs],label="Peak Flux")
+                #p2.plot(wave, np.mean(snr_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]')
+                #p2.plot(wave, np.median(snr_cutout_aper,axis=(1,2)),label='Median Flux [Aperture : 0.2"]')
+                l3, = p2.plot(wave, np.mean(snr_cutout_aperlselect,axis=1),label="Mean Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
+                l4, = p2.plot(wave, np.median(snr_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
+
+                #leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
+                leg = p.legend([l1,l2,l3,l4], ["Total Flux [Aperture : "+"{:.3f}".format(sizel)+'"]', "Peak Flux",
+                         "Mean Flux [Aperture : "+"{:.3f}".format(sizel)+'"]',"Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]'],
+                         loc=1,numpoints=1,prop={'size': 6})
+
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("S/N")
-                leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
+                #leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
                 if png_output:
                     fig.savefig(png_output)
                 else:
@@ -936,43 +998,60 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             totime =  (snr * np.sqrt(observedCube+noisetotal)/observedCube)**2
             # totime = itime * nframes
 
+	    peakSNR=""
+            medianSNR=""
+            meanSNR=""
+            medianSNRl=""
+            meanSNRl=""	    
+	    minexptime=""
+	    medianexptime=""
+	    meanexptime=""
+	    medianexptimel=""
+	    meanexptimel=""	    	
+
+	    totalSNRl = ""	                                    # integrated aperture SNR at pre-defined fixed aperture
+	    totalexptimel = ""	                                    # integrated aperture exptime at pre-defined fixed aperture
 
             flatarray=np.ones(totime[0,:,:].shape)
-            maskimg= mask.multiply(flatarray)
-            masklimg= maskl.multiply(flatarray)
+            if photutils.__version__ == "0.4":
+                maskimg= mask.multiply(flatarray)
+                masklimg= maskl.multiply(flatarray)
+            else:
+                maskimg= mask.apply(flatarray)
+                masklimg= maskl.apply(flatarray)
 
 
-            data_cutout = []
-            data_cutout_aper = []
-            data_cutout_aperselect = []
-            data_cutoutl = []
-            data_cutout_aperl = []
-            data_cutout_aperlselect = []
+            totime_cutout = []
+            totime_cutout_aper = []
+            totime_cutout_aperselect = []
+            totime_cutoutl = []
+            totime_cutout_aperl = []
+            totime_cutout_aperlselect = []
 
 
             for n in xrange(dxspectrum):
-                data_cutout.append(mask.cutout(totime[n,:,:]))
+                totime_cutout.append(mask.cutout(totime[n,:,:]))
 
                 if photutils.__version__ == "0.4":
-                    data_cutout_tmp = mask.multiply(totime[n,:,:]) # in version 0.4 of photutils
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
+                    totime_cutout_tmp = mask.multiply(totime[n,:,:]) # in version 0.4 of photutils
+                    totime_cutout_tmp_select=totime_cutout_tmp[np.where(maskimg>0)]
                 else:
-                    data_cutout_tmp = mask.apply(totime[n,:,:])
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(maskimg>0)]
-                data_cutout_aper.append(data_cutout_tmp)
+                    totime_cutout_tmp = mask.apply(totime[n,:,:])
+                    totime_cutout_tmp_select=totime_cutout_tmp[np.where(maskimg>0)]
+                totime_cutout_aper.append(totime_cutout_tmp)
 
             for n in xrange(dxspectrum): 
-                data_cutout_aperselect.append(data_cutout_tmp_select)
-                data_cutoutl.append(maskl.cutout(totime[n,:,:]))
+                totime_cutout_aperselect.append(totime_cutout_tmp_select)
+                totime_cutoutl.append(maskl.cutout(totime[n,:,:]))
 
                 if photutils.__version__ == "0.4":
-                    data_cutout_tmp = maskl.multiply(totime[n,:,:]) # in version 0.4 of photutils
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
+                    totime_cutout_tmp = maskl.multiply(totime[n,:,:]) # in version 0.4 of photutils
+                    totime_cutout_tmp_select=totime_cutout_tmp[np.where(masklimg>0)]
                 else:
-                    data_cutout_tmp = maskl.apply(totime[n,:,:])
-                    data_cutout_tmp_select=data_cutout_tmp[np.where(masklimg>0)]
-                data_cutout_aperl.append(data_cutout_tmp)
-                data_cutout_aperlselect.append(data_cutout_tmp_select)
+                    totime_cutout_tmp = maskl.apply(totime[n,:,:])
+                    totime_cutout_tmp_select=totime_cutout_tmp[np.where(masklimg>0)]
+                totime_cutout_aperl.append(totime_cutout_tmp)
+                totime_cutout_aperlselect.append(totime_cutout_tmp_select)
 
                 #if verb > 0 and n == 0:
                 #    fig = plt.figure()
@@ -980,51 +1059,87 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 #    p.imshow(totime[n,:,:],interpolation='none')
                 #    plt.show()
 
-            data_cutout = np.array(data_cutout)
-            data_cutout_aper = np.array(data_cutout_aper)
-            data_cutoutl = np.array(data_cutoutl)
+            totime_cutout = np.array(totime_cutout)
+            totime_cutout_aper = np.array(totime_cutout_aper)
+            totime_cutoutl = np.array(totime_cutoutl)
+            totime_cutout_aperl = np.array(totime_cutout_aperl)
+            totime_cutout_aperselect = np.array(totime_cutout_aperselect)
+            totime_cutout_aperlselect = np.array(totime_cutout_aperlselect)
+
+            ############################
+            # exposure time for aperture 
+            ############################
+            data_cutout_aperl = []
+            noise_cutout_aperl = []
+            for n in xrange(dxspectrum): 
+
+                if photutils.__version__ == "0.4":
+                    data_cutout_tmp = maskl.multiply(observedCube[n,:,:]) # in version 0.4 of photutils
+                    noise_cutout_tmp = maskl.multiply(noisetotal[n,:,:])
+                else:
+                    data_cutout_tmp = maskl.apply(observedCube[n,:,:])
+                    noise_cutout_tmp = maskl.apply(noisetotal[n,:,:])
+                data_cutout_aperl.append(data_cutout_tmp)
+                noise_cutout_aperl.append(noise_cutout_tmp)
+
             data_cutout_aperl = np.array(data_cutout_aperl)
-            data_cutout_aperselect = np.array(data_cutout_aperselect)
-            data_cutout_aperlselect = np.array(data_cutout_aperlselect)
-            #print data_cutout.shape
-            #print data_cutout_aper.shape
-            peakSNR=""
-            medianSNR=""
-            meanSNR=""
-            medianSNRl=""
-            meanSNRl=""
-            minexptime=""
-            medianexptime=""
-            meanexptime=""
-            medianexptimel=""
-            meanexptimel=""
+            noise_cutout_aperl = np.array(noise_cutout_aperl)
+
+            ###########################
+            # summation of the aperture
+            ###########################
+            #aper_suml = data_cutout_aperl.sum()
+            #noise_suml = np.sqrt((noise_cutout_aperl**2).sum())
+
+            aper_sum_chl = np.sum(data_cutout_aperl,axis=(1,2))  # per channel
+            noise_sum_chl = np.sqrt(np.sum(noise_cutout_aperl**2,axis=(1,2)))  # per channel
+
+            totime_chl =  (snr * np.sqrt(aper_sum_chl+noise_sum_chl)/aper_sum_chl)**2
+
+            aper_suml = aper_sum_chl.sum()
+            noise_suml = np.sqrt((noise_sum_chl**2).sum())
+
+            totimel =  (snr * np.sqrt(aper_suml+noise_suml)/aper_suml)**2
+
+
+            if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
+            if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(totime_cutout_aperlselect)
+            if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(totime_cutout_aperlselect)
+            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel)
+
+	    totalexptimel= str("%0.4f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
             ####################
             # Main exposure plot
             ####################
             if verb > 0:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
-                p.plot(wave, totime[:,ys,xs],c="k",label="Peak Flux")
-                #p.plot(wave, np.mean(data_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]' )
-                #p.plot(wave, np.median(data_cutout_aper,axis=(1,2)),label='Median Flux  [Aperture : 0.2"]')
-                p.plot(wave, np.mean(data_cutout_aperlselect,axis=1),label="Mean Flux  [Aperture : "+"{:.3f}".format(sizel)+'"]')
-                p.plot(wave, np.median(data_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')
+
+
+                l1, = p.plot(wave, totime_chl, c="k", label="Total Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
+
                 p.set_xlabel("Wavelength ($\mu$m)")
                 p.set_ylabel("Total Integration time (seconds)")
-                leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
+
+                ############
+                # inset plot
+                ############
+                p2 = plt.axes([0.2, 0.6, 0.25, 0.25])
+                l2, = p2.plot(wave, totime[:,ys,xs],label="Peak Flux")
+                #p2.plot(wave, np.mean(totime_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]' )
+                #p2.plot(wave, np.median(totime_cutout_aper,axis=(1,2)),label='Median Flux  [Aperture : 0.2"]')
+                l3, = p2.plot(wave, np.mean(totime_cutout_aperlselect,axis=1),label="Mean Flux  [Aperture : "+"{:.3f}".format(sizel)+'"]')
+                l4, = p2.plot(wave, np.median(totime_cutout_aperlselect,axis=1),label="Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
+
+                #leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
+                leg = p.legend([l1,l2,l3,l4], ["Total Flux [Aperture : "+"{:.3f}".format(sizel)+'"]',
+                          "Peak Flux","Mean Flux  [Aperture : "+"{:.3f}".format(sizel)+'"]',
+                          "Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]'],loc=1,numpoints=1,prop={'size': 6})
 
                 if png_output:
                     fig.savefig(png_output)
                 else:
                     plt.show()
-
-            #print totime
-            #print np.max(totime)
-            #data_cutout = mask.cutout(totime)
-            #data_cutout_aper = mask.apply(totime)
-            if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
-            if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
-            if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
 
             if verb > 1:
                 fig = plt.figure()
@@ -1032,34 +1147,6 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(totime[0,:,:])
                 plt.show()
 
-            # exposure time for aperture
-            data_cutout = []
-            data_cutout_aper = []
-            noise_cutout = []
-            noise_cutout_aper = []
-            for n in xrange(dxspectrum):
-                data_cutout.append(mask.cutout(observedCube[n,:,:]))
-
-                if photutils.__version__ == "0.4":
-                    data_cutout_tmp = mask.multiply(observedCube[n,:,:]) # in version 0.4 of photutils
-                    noise_cutout_tmp = mask.multiply(noisetotal[n,:,:])
-                else:
-                    data_cutout_tmp = mask.apply(observedCube[n,:,:])
-                    noise_cutout_tmp = mask.apply(noisetotal[n,:,:])
-                data_cutout_aper.append(data_cutout_tmp)
-
-            data_cutout = np.array(data_cutout)
-            data_cutout_aper = np.array(data_cutout_aper)
-            noise_cutout = np.array(noise_cutout)
-            noise_cutout_aper = np.array(noise_cutout_aper)
-
-            ###########################
-            # summation of the aperture
-            ###########################
-            aper_sum = data_cutout_aper.sum()
-            noise_sum = np.sqrt((noise_cutout_aper**2).sum())
-            totime =  (snr * np.sqrt(aper_sum+noise_sum)/aper_sum)**2
-            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime)
 
     ###########################################################################
     ###########################################################################
@@ -1212,19 +1299,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 data_cutout_aperl = maskl.apply(snrMap)
 
             flatarray=np.ones(snrMap.shape)
-            maskimg= mask.multiply(flatarray)
-            masklimg= maskl.multiply(flatarray)
+            if photutils.__version__ == "0.4":
+                maskimg= mask.multiply(flatarray)
+                masklimg= maskl.multiply(flatarray)
+            else:
+                maskimg= mask.apply(flatarray)
+                masklimg= maskl.apply(flatarray)
 
-            peakSNR=str("%0.4f" %np.max(snrMap))
-            medianSNR=str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
-            meanSNR=str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
-            medianSNRl=str("%0.4f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
-            meanSNRl=str("%0.4f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))
-            minexptime=""
-            medianexptime=""
-            meanexptime=""
-            medianexptimel=""
-            meanexptimel=""
             #print np.min(snrMap)
             if verb > 1: print "Peak S/N = %.4f" % np.max(snrMap)
             if verb > 1: print "Median S/N = %.4f" % np.median(data_cutout_aper)
@@ -1242,8 +1323,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             # summation of the aperture
             ###########################
             snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
-            if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (2*radius*scale, snr_int[0])
-
+            if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (sizel, snr_int[0])
+            
             if verb > 1:
                 phot_table = aperture_photometry(signal, apertures, error=noisemap)
                 dn     = np.array([phot_table["aperture_sum_%i" % i] for i in range(len(radii))])
@@ -1258,6 +1339,32 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.set_ylabel("Counts [photons/s/aperture]")
                 plt.show()
 
+	    peakSNR = str("%0.4f" % np.max(snrMap))
+	    medianSNR = str("%0.4f" % np.median(data_cutout_aper))
+	    meanSNR = str("%0.4f" % np.mean(data_cutout_aper))
+	    medianSNRl = str("%0.4f" % np.median(data_cutout_aperl))
+	    meanSNRl = str("%0.4f" % np.mean(data_cutout_aperl))	    
+	    totalSNRl = str("%0.4f" % snr_int)	                    # integrated aperture SNR at pre-defined fixed aperture
+
+	    minexptime = ""
+	    medianexptime = ""
+	    meanexptime = ""
+	    medianexptimel = ""
+	    meanexptimel = ""	    
+	    totalexptimel = ""	                                    # integrated aperture exptime at pre-defined fixed aperture
+
+            #print np.min(snrMap)
+
+            if verb > 1: print "Peak S/N = %.4f" % np.max(snrMap)
+            if verb > 1: print "Median S/N = %.4f" % np.median(data_cutout_aper)
+            if verb > 1: print "Mean S/N = %.4f" % np.mean(data_cutout_aper)
+            
+            if verb > 1:
+                fig = plt.figure()
+                p = fig.add_subplot(111)
+                p.imshow(data_cutout_aper,interpolation='none')
+                plt.show()
+            
             #simImage = dblarr(s[1], s[2])
             #for i = 0, s[1]-1 do begin
             #   for j = 0, s[2]-1 do begin
@@ -1296,8 +1403,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 
             flatarray=np.ones(totime.shape)
-            maskimg= mask.multiply(flatarray)
-            masklimg= maskl.multiply(flatarray)
+            if photutils.__version__ == "0.4":
+                maskimg= mask.multiply(flatarray)
+                masklimg= maskl.multiply(flatarray)
+            else:
+                maskimg= mask.apply(flatarray)
+                masklimg= maskl.apply(flatarray)
+
             minexptime= str("%0.4f" %np.min(totime))
             medianexptime= str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
             meanexptime=  str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
@@ -1308,6 +1420,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             meanSNR=""
             medianSNRl=""
             meanSNRl=""
+
+	    totalSNRl = ""	                    # integrated aperture SNR at pre-defined fixed aperture
+
             if verb > 1: print "Min time (peak flux) = %.4f seconds" % np.min(totime)
             if verb > 1: print "Median time (median aperture flux) = %.4f seconds" % np.median(data_cutout_aper)
             if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(data_cutout_aper)
@@ -1319,21 +1434,27 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(totime[0,:])
                 plt.show()
 
-
             # exposure time for aperture
             data_cutout = mask.cutout(tmtImage)
+            data_cutoutl = maskl.cutout(tmtImage)
             #data_cutout_aper = mask.apply(tmtImage)
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(tmtImage) # in version 0.4 of photutils
+                data_cutout_aperl = maskl.multiply(tmtImage) # in version 0.4 of photutils
             else:
                 data_cutout_aper = mask.apply(tmtImage)
-            aper_sum = data_cutout_aper.sum()
+                data_cutout_aperl = maskl.apply(tmtImage)
+            aper_suml = data_cutout_aperl.sum()
             ###########################
             # summation of the aperture
             ###########################
-            totime =  (snr * np.sqrt(aper_sum+noisetotal)/aper_sum)**2
-            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (2*radius*scale, totime[0])
+            totimel =  (snr * np.sqrt(aper_suml+noisetotal)/aper_suml)**2
+            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel[0])
 
+	    totalexptimel= str("%0.4f" %totimel[0]) # integrated aperture exptime at pre-defined fixed aperture 
+
+
+            
     #jsondict={'Magnitude of Source (Vega)':mag,'Peak Value of SNR':peakSNR,'Median Value of SNR (Aperture =0.4")':medianSNR,'Mean Value of SNR (Aperture =0.4")':meanSNR,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':medianSNRl,'Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")':meanSNRl,'Exposure time (Minimum) ':minexptime,'Median Value of Exposure time (Aperture =0.4\")':medianexptime,'Mean Value of Exposure time (Aperture =0.4")':meanexptime,'Median Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':medianexptimel,'Mean Value of Exposure time (Aperture = '+"{:.3f}".format(sizel)+'")':meanexptimel,"Flux density of Source":str("%0.4e" %flambda[0])}
     if calc == "exptime":
         inputstr='Input SNR'
@@ -1345,8 +1466,9 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         magadd='[per square arcsecond]'
     else:
         magadd=''
-    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.2")',medianSNR),('Mean Value of SNR (Aperture =0.2")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel)])
 
+
+    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel)])
     print(json.dumps(jsondict))
 
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
