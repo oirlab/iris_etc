@@ -1482,7 +1482,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             totimel =  (snr * np.sqrt(aper_totsuml)/aper_suml)**2
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel[0])
 
-	    totalexptimel= str("%0.4f" %totimel[0]) # integrated aperture exptime at pre-defined fixed aperture 
+	    totalexptimel= str("%0.4f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
 
 
             
