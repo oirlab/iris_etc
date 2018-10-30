@@ -68,3 +68,11 @@ IFS mode
 
 `iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -mode IFS -calc exptime -snr 50.0 -zenith-angle 30 -atm-cond 25 -psf-loc 0. 0.`
 
+Extended object mode
+
+`iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -source extended -mode imager -calc snr -nframes 2 -zenith-angle 45 -atm-cond 75 -psf-loc 0.6 12.`
+
+Plots in png format and IFS data in csv format
+
+`iris_snr_sim.py -mag 20.0 -filter K -scale 0.004 -source extended -mode imager -calc snr -nframes 2 -zenith-angle 45 -atm-cond 75 -psf-loc 0.6 12. -csv dump.csv -o plot.png`
+
