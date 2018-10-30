@@ -1459,7 +1459,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 saturated=0     
 
 
-
+            flatarray=np.ones(tmtImage.shape)
             # exposure time for aperture
             data_cutout = mask.cutout(tmtImage)
             data_cutoutl = maskl.cutout(tmtImage)
@@ -1467,10 +1467,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(tmtImage) # in version 0.4 of photutils
                 data_cutout_aperl = maskl.multiply(tmtImage) # in version 0.4 of photutils
+		noise_cutout_aperl = maskl.multiply(flatarray)+noisetotal
             else:
                 data_cutout_aper = mask.apply(tmtImage)
                 data_cutout_aperl = maskl.apply(tmtImage)
-            aper_totsuml = (data_cutout_aperl+noisetotal).sum()
+		noise_cutout_aperl = maskl.apply(flatarray)+noisetotal
+	    
+	    
+            aper_totsuml = data_cutout_aperl.sum()+noise_cutout_aperl.sum()
             aper_suml = data_cutout_aperl.sum()
             ###########################
             # summation of the aperture
