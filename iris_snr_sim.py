@@ -1350,10 +1350,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 plt.show()
 
 	    peakSNR = str("%0.4f" % np.max(snrMap))
-	    medianSNR = str("%0.4f" % np.median(data_cutout_aper))
-	    meanSNR = str("%0.4f" % np.mean(data_cutout_aper))
-	    medianSNRl = str("%0.4f" % np.median(data_cutout_aperl))
-	    meanSNRl = str("%0.4f" % np.mean(data_cutout_aperl))	    
+	    medianSNR = str("%0.4f" % np.median(data_cutout_aper[np.where(maskimg>0)]))
+	    meanSNR = str("%0.4f" % np.mean(data_cutout_aper[np.where(maskimg>0)]))
+	    medianSNRl = str("%0.4f" % np.median(data_cutout_aperl[np.where(masklimg>0)]))
+	    meanSNRl = str("%0.4f" % np.mean(data_cutout_aperl[np.where(masklimg>0)]))	    
 	    totalSNRl = str("%0.4f" % snr_int)	                    # integrated aperture SNR at pre-defined fixed aperture
 
 	    minexptime = ""
