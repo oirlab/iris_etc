@@ -70,12 +70,12 @@ def extrap1d(interpolator):
 
 
 def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
-             nframes = 1, snr = 10.0, radius = 0.024, gain = 1.0,
+             nframes = 1, snr = 10.0, radius = 0.024, gain = 3.04,
              readnoise = 5., darkcurrent = 0.002, scale = 0.004,
              resolution = 4000, collarea = 630.0, positions = [0, 0],
              bgmag = None, efftot = None, mode = "imager", calc = "snr",
              spectrum = "Vega", lam_obs = 2.22, line_width = 200.,
-             png_output = None, zenith_angle = 30. , atm_cond = 50.,source='point_source',source_size=0.2,
+             png_output = None, zenith_angle = 30. , atm_cond = 50.,source='point_source',source_size=0.2,csv_output=None,
              psf_loc = [8.8, 8.8], psf_time = 1.4, verb = 1, psf_old = 0,
              simdir='~/data/iris/sim/', psfdir='~/data/iris/sim/', test = 0):
 
@@ -106,7 +106,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #fixed radius 0.2 arc sec
     radius=0.1
     radius /= scale
-
+    sat_limit=50000
     if spectrum.lower() == "vega":
        spectrum = "vega_all.fits"
        #spectrum = "spec_vega.fits"
@@ -897,12 +897,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p = fig.add_subplot(111)
                 #p.plot(wave, filter_tput*cube[:,ys,xs])
                 l1, = p.plot(wave, snr_chl, c="k", label="Total Flux [Aperture : "+"{:.3f}".format(sizel)+'"]')		
-
                 ############
                 # inset plot
                 ############
                 #p2 = plt.axes([0.2, 0.6, 0.25, 0.25])
-                p2 = plt.axes([0.625, 0.55, 0.25, 0.25])
+                p2 = plt.axes([0.17, 0.2, 0.25, 0.25]) #0.625, 0.55
                 l2, = p2.plot(wave, snrCube[:,ys,xs],label="Peak Flux")
                 #p2.plot(wave, np.mean(snr_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]')
                 #p2.plot(wave, np.median(snr_cutout_aper,axis=(1,2)),label='Median Flux [Aperture : 0.2"]')
@@ -918,10 +917,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.set_ylabel("S/N")
                 #leg = p.legend(loc=1,numpoints=1,prop={'size': 6})
                 if png_output:
-                    fig.savefig(png_output)
+		    plt.tight_layout()
+                    fig.savefig(png_output,dpi=200)
                 else:
+		    plt.tight_layout()
                     plt.show()
-
+                if csv_output:
+		    csvarr=np.array([wave,snrCube[:,ys,xs],np.median(snr_cutout_aperlselect,axis=1),snr_chl]).T
+		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),SNR_Peak,SNR_Median,SNR_Aperture_Total", comments="",fmt='%.3f')
             #print data_cutout.shape
             #print data_cutout_aper.shape
 
@@ -1124,7 +1127,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 ############
                 # inset plot
                 ############
-                p2 = plt.axes([0.2, 0.6, 0.25, 0.25])
+                p2 = plt.axes([0.175, 0.65, 0.20, 0.20])
                 l2, = p2.plot(wave, totime[:,ys,xs],label="Peak Flux")
                 #p2.plot(wave, np.mean(totime_cutout_aper,axis=(1,2)),label='Mean Flux [Aperture : 0.2"]' )
                 #p2.plot(wave, np.median(totime_cutout_aper,axis=(1,2)),label='Median Flux  [Aperture : 0.2"]')
@@ -1137,10 +1140,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                           "Median Flux [Aperture : "+"{:.3f}".format(sizel)+'"]'],loc=1,numpoints=1,prop={'size': 6})
 
                 if png_output:
-                    fig.savefig(png_output)
+                    fig.savefig(png_output,dpi=200)
                 else:
                     plt.show()
-
+                if csv_output:    
+		    csvarr=np.array([wave,totime[:,ys,xs],np.median(totime_cutout_aperlselect,axis=1),totime_chl]).T
+		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),Int_Time_PeakFlux(s),Int_Time_MedianFlux(s),Int_Time_Total_Aperture_Flux(s)", comments="",fmt='%.3f')
             if verb > 1:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
@@ -1266,6 +1271,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             simImage = simImage_tot/(itime*nframes) # [electrons/s]
             simImage_DN = simImage_tot/gain # [DNs]
 
+            if simImage_DN.max() > sat_limit:
+                saturated=len(np.where(simImage_DN>sat_limit)[0])
+            else:
+                saturated=0     
+		
             if verb > 2:
                 # [electrons]
                 hdu = fits.PrimaryHDU(simImage_tot)
@@ -1317,7 +1327,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(data_cutout_aper,interpolation='none')
                 plt.show()
 
-            phot_table = aperture_photometry(signal, aperture, error=noisemap)
+            phot_table = aperture_photometry(signal, aperturel, error=noisemap)
             #print phot_table
             ###########################
             # summation of the aperture
@@ -1434,6 +1444,22 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.imshow(totime[0,:])
                 plt.show()
 
+
+            totalObserved = tmtImage*itime*nframes + background*itime*nframes + darkcurrent*itime*nframes + readnoise*itime*nframes
+            # model + background + noise
+            # [electrons]
+            simImage_tot = np.random.poisson(lam=totalObserved, size=totalObserved.shape).astype("float64")
+            # divide back by total integration time to get the simulated image
+            simImage = simImage_tot/(itime*nframes) # [electrons/s]
+            simImage_DN = simImage_tot/gain # [DNs]
+
+            if simImage_DN.max() > sat_limit:
+                saturated=len(np.where(simImage_DN>sat_limit)[0])
+            else:
+                saturated=0     
+
+
+            flatarray=np.ones(tmtImage.shape)
             # exposure time for aperture
             data_cutout = mask.cutout(tmtImage)
             data_cutoutl = maskl.cutout(tmtImage)
@@ -1441,17 +1467,22 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(tmtImage) # in version 0.4 of photutils
                 data_cutout_aperl = maskl.multiply(tmtImage) # in version 0.4 of photutils
+		noise_cutout_aperl = maskl.multiply(flatarray)+noisetotal
             else:
                 data_cutout_aper = mask.apply(tmtImage)
                 data_cutout_aperl = maskl.apply(tmtImage)
+		noise_cutout_aperl = maskl.apply(flatarray)+noisetotal
+	    
+	    
+            aper_totsuml = data_cutout_aperl.sum()+noise_cutout_aperl.sum()
             aper_suml = data_cutout_aperl.sum()
             ###########################
             # summation of the aperture
             ###########################
-            totimel =  (snr * np.sqrt(aper_suml+noisetotal)/aper_suml)**2
-            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel[0])
+            totimel =  (snr * np.sqrt(aper_totsuml)/aper_suml)**2
+            if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel)
 
-	    totalexptimel= str("%0.4f" %totimel[0]) # integrated aperture exptime at pre-defined fixed aperture 
+	    totalexptimel= str("%0.4f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
 
 
             
@@ -1466,9 +1497,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         magadd='[per square arcsecond]'
     else:
         magadd=''
+    if mode == 'imager':
+        saturatedstr=str(saturated)
+    else:
+        saturatedstr=''
 
-
-    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel)])
+    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
     print(json.dumps(jsondict))
 
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
@@ -1527,6 +1561,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 
 
+
 parser = argparse.ArgumentParser(description='TMT IRIS S/N exposure calculator')
 
 
@@ -1568,7 +1603,8 @@ parser.add_argument('-psf-old', action='store_true',
 
 parser.add_argument('-o', nargs='?', metavar='value', default=None,
                     help='Output file name, else display to screen')
-
+parser.add_argument('-csv', nargs='?', metavar='value', default=None,
+                    help='Output csv filename')
 
 group1 = parser.add_mutually_exclusive_group(required=True)
 group1.add_argument('-mag', metavar='value', type=float, nargs='?',
@@ -1614,7 +1650,6 @@ line_width = args.line_width
 zenith_angle = args.zenith_angle
 atm_cond = args.atm_cond
 psf_loc = args.psf_loc
-
 psf_old = args.psf_old
 
 nframes = args.nframes
@@ -1625,6 +1660,8 @@ calc = args.calc
 source=args.source
 source_size=args.source_size
 png_output = args.o
+csv_output = args.csv                         
+
 
 #print mag
 #print flambda
@@ -1642,7 +1679,7 @@ IRIS_ETC(mode=mode,calc=calc, nframes=nframes, snr=snr, itime=itime, mag=mag,
          simdir=simdir, spectrum=spectrum, lam_obs = wavelength,
          line_width = line_width, zenith_angle=zenith_angle, atm_cond=atm_cond,
          psf_loc=psf_loc, png_output=png_output, psfdir=psfdir, source=source,source_size=source_size,
-         psf_old=psf_old, verb=1)
+         psf_old=psf_old,csv_output=csv_output, verb=1)
 
 
 
