@@ -924,7 +924,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                     plt.show()
                 if csv_output:
 		    csvarr=np.array([wave,snrCube[:,ys,xs],np.median(snr_cutout_aperlselect,axis=1),snr_chl]).T
-		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),SNR_Peak,SNR_Median,SNR_Aperture_Total", comments="",fmt='%.3f')
+		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),SNR_Peak,SNR_Median,SNR_Aperture_Total", comments="",fmt='%.4f')
             #print data_cutout.shape
             #print data_cutout_aper.shape
 
@@ -1145,7 +1145,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                     plt.show()
                 if csv_output:    
 		    csvarr=np.array([wave,totime[:,ys,xs],np.median(totime_cutout_aperlselect,axis=1),totime_chl]).T
-		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),Int_Time_PeakFlux(s),Int_Time_MedianFlux(s),Int_Time_Total_Aperture_Flux(s)", comments="",fmt='%.3f')
+		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),Int_Time_PeakFlux(s),Int_Time_MedianFlux(s),Int_Time_Total_Aperture_Flux(s)", comments="",fmt='%.4f')
             if verb > 1:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
