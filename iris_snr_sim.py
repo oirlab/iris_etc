@@ -28,7 +28,7 @@ from photutils.background import Background2D
 from astropy.convolution import Tophat2DKernel
 from scipy.signal import convolve2d
 from scipy.signal import fftconvolve
-
+import scipy
 import photutils
 #print photutils.__version__
 
@@ -68,6 +68,12 @@ def extrap1d(interpolator):
 
     return ufunclike
 
+def frebin(im, shape):
+    interp = 'nearest'
+    im2 = scipy.misc.imresize(im, shape, interp = interp, mode = 'F')
+    im2 *= im.sum() / im2.sum()
+    return im2    
+    
 
 def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
              nframes = 1, snr = 10.0, radius = 0.024, gain = 3.04,
@@ -269,6 +275,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     image = pf[ext].data
     head = pf[ext].header
     #print head['COMMENT']
+    if mode == "imager":
+		image=frebin(image,[750,750])
 
     image /= image.sum()
     psf_extend=np.array(image)
