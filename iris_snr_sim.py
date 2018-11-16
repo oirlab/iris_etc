@@ -275,6 +275,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #print psf_loc
         #print zenith_angle
         #print atm_cond
+        psf_time=itime
         psf_file = get_psf(zenith_angle, atm_cond, mode, psf_time, psf_loc, scale)
         #print psf_file
         psf_file = os.path.expanduser(psfdir + "/psfs/" + psf_file)
