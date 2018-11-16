@@ -67,13 +67,42 @@ def extrap1d(interpolator):
         return np.array(map(pointwise, np.array(xs)))
 
     return ufunclike
+ 
+def binnd(ndarray, new_shape, operation='sum'):
+    """
+    Bins an ndarray in all axes based on the target shape, by summing or
+        averaging.
 
-def frebin(im, shape):
-    interp = 'nearest'
-    im2 = scipy.misc.imresize(im, shape, interp = interp, mode = 'F')
-    im2 *= im.sum() / im2.sum()
-    return im2    
-    
+    Number of output dimensions must match number of input dimensions and 
+        new axes must divide old ones.
+
+    Example
+    -------
+    >>> m = np.arange(0,100,1).reshape((10,10))
+    >>> n = bin_ndarray(m, new_shape=(5,5), operation='sum')
+    >>> print(n)
+
+    [[ 22  30  38  46  54]
+     [102 110 118 126 134]
+     [182 190 198 206 214]
+     [262 270 278 286 294]
+     [342 350 358 366 374]]
+
+    """
+    if not operation in ['sum', 'mean']:
+        raise ValueError("Operation not supported.")
+    if ndarray.ndim != len(new_shape):
+        raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
+                                                           new_shape))
+    compression_pairs = [(d, c//d) for d,c in zip(new_shape,
+                                                  ndarray.shape)]
+    flattened = [l for p in compression_pairs for l in p]
+    ndarray = ndarray.reshape(flattened)
+    for i in range(len(new_shape)):
+        op = getattr(ndarray, operation)
+        ndarray = op(-1*(i+1))
+    return ndarray
+		
 
 def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
              nframes = 1, snr = 10.0, radius = 0.024, gain = 3.04,
@@ -276,7 +305,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     head = pf[ext].header
     #print head['COMMENT']
     if mode == "imager":
-		image=frebin(image,[750,750])
+		image=binnd(image,[750,750],'sum')
 
     image /= image.sum()
     psf_extend=np.array(image)
