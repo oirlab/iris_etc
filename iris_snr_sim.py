@@ -28,7 +28,7 @@ from photutils.background import Background2D
 from astropy.convolution import Tophat2DKernel
 from scipy.signal import convolve2d
 from scipy.signal import fftconvolve
-
+import scipy
 import photutils
 #print photutils.__version__
 
@@ -67,7 +67,42 @@ def extrap1d(interpolator):
         return np.array(map(pointwise, np.array(xs)))
 
     return ufunclike
+ 
+def binnd(ndarray, new_shape, operation='sum'):
+    """
+    Bins an ndarray in all axes based on the target shape, by summing or
+        averaging.
 
+    Number of output dimensions must match number of input dimensions and 
+        new axes must divide old ones.
+
+    Example
+    -------
+    >>> m = np.arange(0,100,1).reshape((10,10))
+    >>> n = bin_ndarray(m, new_shape=(5,5), operation='sum')
+    >>> print(n)
+
+    [[ 22  30  38  46  54]
+     [102 110 118 126 134]
+     [182 190 198 206 214]
+     [262 270 278 286 294]
+     [342 350 358 366 374]]
+
+    """
+    if not operation in ['sum', 'mean']:
+        raise ValueError("Operation not supported.")
+    if ndarray.ndim != len(new_shape):
+        raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
+                                                           new_shape))
+    compression_pairs = [(d, c//d) for d,c in zip(new_shape,
+                                                  ndarray.shape)]
+    flattened = [l for p in compression_pairs for l in p]
+    ndarray = ndarray.reshape(flattened)
+    for i in range(len(new_shape)):
+        op = getattr(ndarray, operation)
+        ndarray = op(-1*(i+1))
+    return ndarray
+		
 
 def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
              nframes = 1, snr = 10.0, radius = 0.024, gain = 3.04,
@@ -240,6 +275,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #print psf_loc
         #print zenith_angle
         #print atm_cond
+        psf_time=itime
         psf_file = get_psf(zenith_angle, atm_cond, mode, psf_time, psf_loc, scale)
         #print psf_file
         psf_file = os.path.expanduser(psfdir + "/psfs/" + psf_file)
@@ -269,6 +305,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     image = pf[ext].data
     head = pf[ext].header
     #print head['COMMENT']
+    if mode == "imager":
+		image=binnd(image,[750,750],'sum')
 
     image /= image.sum()
     psf_extend=np.array(image)
@@ -923,8 +961,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 		    plt.tight_layout()
                     plt.show()
                 if csv_output:
-		    csvarr=np.array([wave,snrCube[:,ys,xs],np.median(snr_cutout_aperlselect,axis=1),snr_chl]).T
-		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),SNR_Peak,SNR_Median,SNR_Aperture_Total", comments="",fmt='%.3f')
+		    csvarr=np.array([wave,snrCube[:,ys,xs],np.median(snr_cutout_aperlselect,axis=1),np.mean(snr_cutout_aperlselect,axis=1),snr_chl]).T
+		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),SNR_Peak,SNR_Median,SNR_Mean,SNR_Aperture_Total", comments="",fmt='%.4f')
             #print data_cutout.shape
             #print data_cutout_aper.shape
 
@@ -1144,8 +1182,8 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 else:
                     plt.show()
                 if csv_output:    
-		    csvarr=np.array([wave,totime[:,ys,xs],np.median(totime_cutout_aperlselect,axis=1),totime_chl]).T
-		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),Int_Time_PeakFlux(s),Int_Time_MedianFlux(s),Int_Time_Total_Aperture_Flux(s)", comments="",fmt='%.3f')
+		    csvarr=np.array([wave,totime[:,ys,xs],np.median(totime_cutout_aperlselect,axis=1),np.mean(totime_cutout_aperlselect,axis=1),totime_chl]).T
+		    np.savetxt(csv_output, csvarr, delimiter=',', header="Wavelength(microns),Int_Time_PeakFlux(s),Int_Time_MedianFlux(s),Int_Time_MeanFlux(s),Int_Time_Total_Aperture_Flux(s)", comments="",fmt='%.4f')
             if verb > 1:
                 fig = plt.figure()
                 p = fig.add_subplot(111)
@@ -1350,10 +1388,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 plt.show()
 
 	    peakSNR = str("%0.4f" % np.max(snrMap))
-	    medianSNR = str("%0.4f" % np.median(data_cutout_aper))
-	    meanSNR = str("%0.4f" % np.mean(data_cutout_aper))
-	    medianSNRl = str("%0.4f" % np.median(data_cutout_aperl))
-	    meanSNRl = str("%0.4f" % np.mean(data_cutout_aperl))	    
+	    medianSNR = str("%0.4f" % np.median(data_cutout_aper[np.where(maskimg>0)]))
+	    meanSNR = str("%0.4f" % np.mean(data_cutout_aper[np.where(maskimg>0)]))
+	    medianSNRl = str("%0.4f" % np.median(data_cutout_aperl[np.where(masklimg>0)]))
+	    meanSNRl = str("%0.4f" % np.mean(data_cutout_aperl[np.where(masklimg>0)]))	    
 	    totalSNRl = str("%0.4f" % snr_int)	                    # integrated aperture SNR at pre-defined fixed aperture
 
 	    minexptime = ""
@@ -1499,10 +1537,13 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         magadd=''
     if mode == 'imager':
         saturatedstr=str(saturated)
+	resolutionstr=''	
     else:
         saturatedstr=''
+	resolutionstr=str(resolution)
+	
 
-    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',str(resolution)),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
+    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',resolutionstr),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
     print(json.dumps(jsondict))
 
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
