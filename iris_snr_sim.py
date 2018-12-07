@@ -139,9 +139,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     #           calc - either "snr" or "exptime"
 
     #fixed radius 0.2 arc sec
-    radius=0.1
+    radius=0.2
     radius /= scale
-    sat_limit=50000
+    ## Saturation Limit
+    sat_limit=90000
     if spectrum.lower() == "vega":
        spectrum = "vega_all.fits"
        #spectrum = "spec_vega.fits"
@@ -1292,6 +1293,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
             # model + background
             totalObserved = tmtImage*itime*nframes + background*itime*nframes + darkcurrent*itime*nframes + readnoise*itime*nframes
+	    totalObserved_itime = tmtImage*itime + background*itime + darkcurrent*itime + readnoise*itime
             #print totalObserved.shape
             #print totalObserved.dtype
 
@@ -1303,14 +1305,17 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             # model + background + noise
             # [electrons]
             simImage_tot = np.random.poisson(lam=totalObserved, size=totalObserved.shape).astype("float64")
+	    simImage_tot_itime = np.random.poisson(lam=totalObserved_itime, size=totalObserved_itime.shape).astype("float64")
             #print simImage_tot.dtype
 
             # divide back by total integration time to get the simulated image
             simImage = simImage_tot/(itime*nframes) # [electrons/s]
-            simImage_DN = simImage_tot/gain # [DNs]
+            simImage_DN = simImage_tot_itime/gain # [DNs]
+	    
+	    simImage_sat=totalObserved_itime+1.96*np.sqrt(totalObserved_itime)
 
-            if simImage_DN.max() > sat_limit:
-                saturated=len(np.where(simImage_DN>sat_limit)[0])
+            if simImage_sat.max()>sat_limit:
+                saturated=len(np.where(simImage_sat>sat_limit)[0])
             else:
                 saturated=0     
 		
@@ -1387,12 +1392,12 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 p.set_ylabel("Counts [photons/s/aperture]")
                 plt.show()
 
-	    peakSNR = str("%0.4f" % np.max(snrMap))
-	    medianSNR = str("%0.4f" % np.median(data_cutout_aper[np.where(maskimg>0)]))
-	    meanSNR = str("%0.4f" % np.mean(data_cutout_aper[np.where(maskimg>0)]))
-	    medianSNRl = str("%0.4f" % np.median(data_cutout_aperl[np.where(masklimg>0)]))
-	    meanSNRl = str("%0.4f" % np.mean(data_cutout_aperl[np.where(masklimg>0)]))	    
-	    totalSNRl = str("%0.4f" % snr_int)	                    # integrated aperture SNR at pre-defined fixed aperture
+	    peakSNR = str("%0.2f" % np.max(snrMap))
+	    medianSNR = str("%0.2f" % np.median(data_cutout_aper[np.where(maskimg>0)]))
+	    meanSNR = str("%0.2f" % np.mean(data_cutout_aper[np.where(maskimg>0)]))
+	    medianSNRl = str("%0.2f" % np.median(data_cutout_aperl[np.where(masklimg>0)]))
+	    meanSNRl = str("%0.2f" % np.mean(data_cutout_aperl[np.where(masklimg>0)]))	    
+	    totalSNRl = str("%0.2f" % snr_int)	                    # integrated aperture SNR at pre-defined fixed aperture
 
 	    minexptime = ""
 	    medianexptime = ""
@@ -1458,11 +1463,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
                 maskimg= mask.apply(flatarray)
                 masklimg= maskl.apply(flatarray)
 
-            minexptime= str("%0.4f" %np.min(totime))
-            medianexptime= str("%0.4f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
-            meanexptime=  str("%0.4f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
-            medianexptimel= str("%0.4f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
-            meanexptimel=  str("%0.4f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))
+            minexptime= str("%0.1f" %np.min(totime))
+            medianexptime= str("%0.1f" %np.median(data_cutout_aper[np.where(maskimg>0)]))
+            meanexptime=  str("%0.1f" %np.mean(data_cutout_aper[np.where(maskimg>0)]))
+            medianexptimel= str("%0.1f" %np.median(data_cutout_aperl[np.where(masklimg>0)]))
+            meanexptimel=  str("%0.1f" %np.mean(data_cutout_aperl[np.where(masklimg>0)]))
             peakSNR=""
             medianSNR=""
             meanSNR=""
@@ -1484,17 +1489,24 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
 
             totalObserved = tmtImage*itime*nframes + background*itime*nframes + darkcurrent*itime*nframes + readnoise*itime*nframes
+            totalObserved_itime = tmtImage*itime + background*itime + darkcurrent*itime + readnoise*itime
+            
             # model + background + noise
             # [electrons]
             simImage_tot = np.random.poisson(lam=totalObserved, size=totalObserved.shape).astype("float64")
+            simImage_tot_itime = np.random.poisson(lam=totalObserved_itime, size=totalObserved_itime.shape).astype("float64")
             # divide back by total integration time to get the simulated image
             simImage = simImage_tot/(itime*nframes) # [electrons/s]
-            simImage_DN = simImage_tot/gain # [DNs]
+            
+            ## Used for 
+            simImage_DN = simImage_tot_itime/gain # [DNs]
 
-            if simImage_DN.max() > sat_limit:
-                saturated=len(np.where(simImage_DN>sat_limit)[0])
+	    simImage_sat=totalObserved_itime+1.96*np.sqrt(totalObserved_itime)
+
+            if simImage_sat.max()>sat_limit:
+                saturated=len(np.where(simImage_sat>sat_limit)[0])
             else:
-                saturated=0     
+                saturated=0       
 
 
             flatarray=np.ones(tmtImage.shape)
@@ -1520,7 +1532,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             totimel =  (snr * np.sqrt(aper_totsuml)/aper_suml)**2
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel)
 
-	    totalexptimel= str("%0.4f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
+	    totalexptimel= str("%0.1f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
 
 
             
@@ -1543,7 +1555,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 	resolutionstr=str(resolution)
 	
 
-    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',resolutionstr),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
+    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',resolutionstr),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),('Peak Value of SNR',peakSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
     print(json.dumps(jsondict))
 
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
