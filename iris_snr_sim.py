@@ -574,7 +574,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
 
         #bkgd = background_specs2(resolution*2.0, filter, convolve=True, simdir = simdir)
         bkgd = background_specs3(resolution*2.0, filter, convolve=True, simdir = simdir,
-                                 filteronly=False)
+                                 filteronly=True)
 
         ohspec = bkgd.backspecs[0,:]
         cospec = bkgd.backspecs[1,:]
@@ -601,7 +601,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #print wave
         #print backwave
 
-        backtot_func = interpolate.interp1d(backwave,backtot,fill_value='extrapolate')
+        backtot_func = interpolate.interp1d(backwave,backtot)
         backtot = backtot_func(wave)
 
         #print
@@ -1134,7 +1134,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
             #noise_suml = np.sqrt((noise_cutout_aperl**2).sum())
 
             aper_sum_chl = np.sum(data_cutout_aperl,axis=(1,2))  # per channel
-            noise_sum_chl = np.sqrt(np.sum(noise_cutout_aperl**2,axis=(1,2)))  # per channel
+            noise_sum_chl = np.sum(noise_cutout_aperl,axis=(1,2))  # per channel
 
             totime_chl =  (snr * np.sqrt(aper_sum_chl+noise_sum_chl)/aper_sum_chl)**2
 
