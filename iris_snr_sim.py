@@ -1554,10 +1554,10 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
     else:
         saturatedstr=''
         resolutionstr=str(resolution)
-        aperture_str="{:.3f}".format(sizel)
+        aperture_str="{:.3f}".format(sizel)+'"'
         
 
-    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',resolutionstr),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),("Aperture Size",aperture_str+'"'),('Peak Value of SNR',peakSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
+    jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',resolutionstr),('Magnitude of Source [Vega]'+magadd,str(mag)),("Flux density of Source [erg/s/cm^2/Ang]",str("%0.4e" %flambda)),("Aperture Size",aperture_str),('Peak Value of SNR',peakSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
     print(json.dumps(jsondict))
 
         #tmtImage_aper = aperture_photometry(tmtImage, aperture)
