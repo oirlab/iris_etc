@@ -215,7 +215,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         # Interpolating the IRIS throughputs from the PDR-1 Design Description
         # Document (Table 7, page 54)
         #####################################################################
-        R = interpolate.interp1d(wav,tput)
+        R = interpolate.interp1d(wav,tput,fill_value='extrapolate')
         eff_lambda = [R(w) for w0 in w]
         #print eff_lambda
 
@@ -601,7 +601,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, itime = 1.0,
         #print wave
         #print backwave
 
-        backtot_func = interpolate.interp1d(backwave,backtot)
+        backtot_func = interpolate.interp1d(backwave,backtot,fill_value='extrapolate')
         backtot = backtot_func(wave)
 
         #print

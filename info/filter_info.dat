@@ -32,7 +32,7 @@ KN1     	19600.0	20604.0	20096.0	1004.00	16.6449	13.3379	4.9562216e+08	0	~/iris/
 KN2     	20398.0	21443.0	20914.0	1045.00	15.9139	13.7658	4.6403714e+08	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.015452409	info/iris_filter_KN2.dat
 KN3     	21229.0	22317.0	21766.0	1088.00	15.2674	13.6595	4.2398513e+08	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.015452409	info/iris_filter_KN3.dat
 KN4     	22094.0	23226.0	22653.0	1132.00	14.5153	13.9294	3.5076518e+08	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.015452409	info/iris_filter_KN4.dat
-KN45    	22750.0	23850.0	23300.0	1100.00	14.0378	14.1386	3.3222547e+08	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.015452409	info/iris_filter_KN45.dat
+KN4.5    	22750.0	23850.0	23300.0	1100.00	14.0378	14.1386	3.3222547e+08	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.015452409	info/iris_filter_KN45.dat
 KN5     	22993.0	24172.0	23575.0	1179.00	13.7931	13.8620	3.5020212e+08	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl2182nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.015452409	info/iris_filter_KN5.dat
 CaIIw   	8540.00	8660.00	8500.00	120.000	22.3887	20.3703	1.6163352e+09	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl928nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.0065718776	info/iris_filter_CaIIw.dat
 HeIw    	10776.0	11049.0	10830.0	273.000	20.3643	15.9920	1.2771449e+09	0	~/iris/sim/psfs/results_central/psf_x0_y0_wvl1092nm_implKOLMO117nm_bin4mas_sm.fits	0.00400000	0.0077332870	info/iris_filter_HeIw.dat
