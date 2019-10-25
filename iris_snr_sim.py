@@ -1160,7 +1160,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
             if verb > 1: print "Mean time (mean aperture flux) = %.4f seconds" % np.mean(totime_cutout_aperlselect)
             if verb > 1: print 'Time (aperture = %.4f") = %.4f' % (sizel, totimel)
 
-            totalexptimel= str("%0.4f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
+            #totalexptimel= str("%0.4f" %totimel) # integrated aperture exptime at pre-defined fixed aperture 
             ####################
             # Main exposure plot
             ####################
@@ -1386,8 +1386,28 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
             ###########################
             # summation of the aperture
             ###########################
-            snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
-            if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (sizel, snr_int[0])
+            
+
+
+            if photutils.__version__ == "0.4":
+                data_cutout_aper = mask.multiply(tmtImage) # in version 0.4 of photutils
+                data_cutout_aperl = maskl.multiply(tmtImage) # in version 0.4 of photutils
+                noise_cutout_aperl = maskl.multiply(flatarray)*noisetotal
+            else:
+                data_cutout_aper = mask.apply(tmtImage)
+                data_cutout_aperl = maskl.apply(tmtImage)
+                noise_cutout_aperl = maskl.apply(flatarray)*noisetotal
+
+            aper_totsuml = data_cutout_aperl.sum()+noise_cutout_aperl.sum()
+            aper_suml = data_cutout_aperl.sum()
+
+
+      
+            #Change to more classical sum for SNR rather than using phot_table
+	    snr_int=(aper_suml*np.sqrt(nframes*itime))/(np.sqrt(aper_totsuml))
+            #snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
+            
+            if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (sizel, snr_int)
             
             if verb > 1:
                 phot_table = aperture_photometry(signal, apertures, error=noisemap)
@@ -1528,11 +1548,11 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
             if photutils.__version__ == "0.4":
                 data_cutout_aper = mask.multiply(tmtImage) # in version 0.4 of photutils
                 data_cutout_aperl = maskl.multiply(tmtImage) # in version 0.4 of photutils
-                noise_cutout_aperl = maskl.multiply(flatarray)+noisetotal
+                noise_cutout_aperl = maskl.multiply(flatarray)*noisetotal
             else:
                 data_cutout_aper = mask.apply(tmtImage)
                 data_cutout_aperl = maskl.apply(tmtImage)
-                noise_cutout_aperl = maskl.apply(flatarray)+noisetotal
+                noise_cutout_aperl = maskl.apply(flatarray)*noisetotal
             
             
             aper_totsuml = data_cutout_aperl.sum()+noise_cutout_aperl.sum()
@@ -1554,10 +1574,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
     else:
         inputstr= 'Input integration time [s]'
         inputvalue=str(nframes*itime)
-    if source == "extended":
-        magadd='[per square arcsecond]'
-    else:
-        magadd=''
+
     if mode == 'imager':
         saturatedstr=str(saturated)
         resolutionstr=''  
@@ -1566,6 +1583,16 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
         saturatedstr=''
         resolutionstr=str(resolution)
         aperture_str="{:.3f}".format(sizel)+'"'
+
+    if source == "extended":
+        magadd='[per square arcsecond]'
+        if saturated > 0 :
+            saturatedstr='True'
+        else:
+            saturatedstr='False'
+    else:
+        magadd=''        
+        
         
     if fint is not None:
 	fintstr= str("%0.4e" %fint)
