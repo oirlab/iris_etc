@@ -1404,7 +1404,7 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
 
       
             #Change to more classical sum for SNR rather than using phot_table
-	    snr_int=(aper_suml*np.sqrt(nframes*itime))/(np.sqrt(aper_totsuml))
+            snr_int=(aper_suml*np.sqrt(nframes*itime))/(np.sqrt(aper_totsuml))
             #snr_int = phot_table["aperture_sum"].quantity/phot_table["aperture_sum_err"].quantity
             
             if verb > 1: print 'S/N (aperture = %.4f") = %.4f' % (sizel, snr_int)
@@ -1595,14 +1595,14 @@ def IRIS_ETC(filter = "K", mag = 21.0, flambda=1.62e-19, fint=4e-17, itime = 1.0
         
         
     if fint is not None:
-	fintstr= str("%0.4e" %fint)
-	magstr=''
-	flambdastr=''
+        fintstr= str("%0.4e" %fint)
+        magstr=''
+        flambdastr=''
     else:
-	fintstr=''
-	magstr= str(mag)
-	flambdastr=str("%0.4e" %flambda)
-	
+        fintstr=''
+        magstr= str(mag)
+        flambdastr=str("%0.4e" %flambda)
+        
 
     jsondict=OrderedDict([(inputstr,inputvalue),('Filter',str(filter)), ('Central Wavelength [microns]',"{:.3f}".format(lambdac[0]*.0001)),('Resolution',resolutionstr),('Magnitude of Source [Vega]'+magadd,magstr),("Flux density of Source [erg/s/cm^2/Ang]",flambdastr),("Integrated Flux over bandpass [erg/s/cm^2]",fintstr),("Aperture Size",aperture_str),('Peak Value of SNR',peakSNR),('SNR for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalSNRl),('Median Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',medianSNRl),('Mean Value of SNR (Aperture = '+"{:.3f}".format(sizel)+'")',meanSNRl),('Median Value of SNR (Aperture =0.4")',medianSNR),('Mean Value of SNR (Aperture =0.4")',meanSNR),('Total integration time [s] for Peak Flux ',minexptime),('Total integration time [s] for Median Flux (Aperture = '+"{:.3f}".format(sizel)+'")',medianexptimel),('Total integration time [s] for Mean Flux (Aperture = '+"{:.3f}".format(sizel)+'")',meanexptimel),('Total integration time [s] for Total Flux (Aperture = '+"{:.3f}".format(sizel)+'")',totalexptimel),('Saturated Pixels',saturatedstr)])
     print(json.dumps(jsondict))
